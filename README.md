@@ -1,16 +1,69 @@
-# React + Vite
+# 口袋园丁 Pocket Gardener
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+移动端植物养护管理应用，帮助用户记录植物生长、管理养护任务、获取 AI 建议，并与社区交流经验。
 
-Currently, two official plugins are available:
+## 功能特性
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **植物管理** — 植物卡片展示、详情页、养护日志记录、生长数据可视化
+- **养护任务** — 按优先级/时间排序，左滑操作（完成/延后/忽略），新建任务
+- **AI 建议** — 基于植物状态提供智能养护建议
+- **社区交流** — 关注/推荐/我的三栏切换，发帖、点赞、搜索筛选
+- **个人中心** — 打卡热力图、成就系统、统计数据
+- **天气预警** — 天气信息与养护提醒联动
 
-## React Compiler
+## 技术栈
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| 类别 | 技术 |
+|------|------|
+| 框架 | React 19 |
+| 构建工具 | Vite 8 |
+| 路由 | React Router v7 |
+| 样式 | 纯 CSS（CSS 变量 + 组件级内联样式） |
+| 代码规范 | ESLint |
 
-## Expanding the ESLint configuration
+## 快速开始
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run dev
+
+# 生产构建
+npm run build
+
+# 预览生产构建
+npm run preview
+```
+
+开发服务器默认运行在 http://localhost:5173
+
+## 项目结构
+
+```
+src/
+├── components/       # 通用组件（图表、热力图、图标、布局、滑动操作）
+├── data/             # Mock 数据
+├── pages/            # 页面组件
+│   ├── Home.jsx      # 首页（植物列表 + 今日待办）
+│   ├── Tasks.jsx     # 养护任务管理
+│   ├── Community.jsx # 社区
+│   ├── Profile.jsx   # 个人中心
+│   ├── PlantDetail.jsx # 植物详情
+│   └── ...           # 其他子页面
+├── App.jsx           # 路由配置与页面切换动画
+└── index.css         # 全局样式与设计变量
+```
+
+## 设计风格
+
+- 微信/iOS 风格扁平设计，最大宽度 430px 居中
+- 毛玻璃效果导航栏
+- 页面切换滑动动画
+- 绿色主色调（`#07c160`）
+
+## 环境要求
+
+- Node.js >= 18
+- npm >= 9

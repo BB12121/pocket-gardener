@@ -71,6 +71,14 @@ export const weatherAlerts = [
   { id: 'w2', type: '暴雨预警', level: '蓝色', time: '2026-05-08 12:00', suggestion: '建议收回阳台植物或加盖遮雨，防止盆土积水导致烂根', affectedPlants: ['p2', 'p3'] },
 ];
 
+export const currentWeather = {
+  city: '杭州',
+  temperature: '32',
+  condition: '多云转晴',
+  humidity: '65',
+  updateTime: '2026-05-07 06:00',
+};
+
 export const communityUsers = [
   { id: 'cu1', name: '花花世界', bio: '养花10年，专注观叶植物', city: '上海', followers: 128, following: 45 },
   { id: 'cu2', name: '新手小白', bio: '刚入坑的小白一枚', city: '北京', followers: 12, following: 30 },

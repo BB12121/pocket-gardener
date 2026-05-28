@@ -1,9 +1,13 @@
 import { useState } from 'react';
-import { currentUser, plants, achievements, careLogs, checkinDays } from '../data/mockData';
 import Icon from '../components/Icon';
 import Heatmap from '../components/Heatmap';
+import { useGardenData } from '../context/useGardenData';
+import { useAuth } from '../context/useAuth';
+import { localDateString } from '../utils/date';
 
 export default function Profile() {
+  const { currentUser, plants, achievements, careLogs, checkinDays } = useGardenData();
+  const { logout } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const achieved = achievements.filter(a => a.achieved);
   const unachieved = achievements.filter(a => !a.achieved);
@@ -99,19 +103,22 @@ export default function Profile() {
             <span className="cell-arrow">›</span>
           </div>
         ))}
+        <button type="button" className="cell logout-cell" onClick={logout}>
+          <div className="cell-content"><div className="cell-title">退出登录</div></div>
+        </button>
       </div>
     </div>
   );
 }
 
 function getStreak(days) {
-  const sorted = [...days].sort().reverse();
+  const daySet = new Set(days);
   let streak = 0;
-  const today = new Date('2026-05-07');
-  const check = new Date(today);
+  const check = new Date();
+  check.setHours(0, 0, 0, 0);
   for (let i = 0; i < 60; i++) {
-    const dateStr = check.toISOString().split('T')[0];
-    if (sorted.includes(dateStr)) {
+    const dateStr = localDateString(check);
+    if (daySet.has(dateStr)) {
       streak++;
     } else {
       break;

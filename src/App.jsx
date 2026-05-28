@@ -12,6 +12,8 @@ import UserProfile from './pages/UserProfile';
 import Weather from './pages/Weather';
 import Profile from './pages/Profile';
 import AddPlant from './pages/AddPlant';
+import Auth from './pages/Auth';
+import { useAuth } from './context/useAuth';
 
 const TAB_ROUTES = ['/', '/tasks', '/community', '/profile'];
 
@@ -110,6 +112,20 @@ function FixedTabBar() {
 }
 
 function App() {
+  const { checking, isAuthenticated } = useAuth();
+
+  if (checking) {
+    return (
+      <div className="auth-page">
+        <div className="empty">正在检查登录状态...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Auth />;
+  }
+
   return (
     <BrowserRouter>
       <AnimatedRoutes />

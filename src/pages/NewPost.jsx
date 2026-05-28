@@ -1,17 +1,25 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useGardenData } from '../context/useGardenData';
 
 export default function NewPost() {
   const navigate = useNavigate();
+  const { addPost } = useGardenData();
   const [type, setType] = useState('经验');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
+    await addPost({
+      type,
+      title,
+      content,
+      tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
+    });
     setSubmitted(true);
     setTimeout(() => navigate(-1), 1500);
   };

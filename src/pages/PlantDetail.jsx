@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { plants, species, careLogs, careTasks, aiSuggestions, plantGrowthData } from '../data/mockData';
-import Icon, { getPlantIcon, getTaskIcon } from '../components/Icon';
+import Icon from '../components/Icon';
+import { getPlantIcon, getTaskIcon } from '../components/iconMapping';
 import Heatmap from '../components/Heatmap';
 import GrowthChart from '../components/GrowthChart';
+import { useGardenData } from '../context/useGardenData';
 
 export default function PlantDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { plants, species, careLogs, careTasks, aiSuggestions, plantGrowthData } = useGardenData();
   const plant = plants.find(p => p.id === id);
   const sp = species.find(s => s.id === plant?.speciesId);
   const logs = careLogs.filter(l => l.plantId === id);
@@ -24,6 +26,7 @@ export default function PlantDetail() {
   const iconName = getPlantIcon(sp?.category);
   const logDates = logs.map(l => l.time.split(' ')[0]);
   const selectedLogs = selectedDate ? logs.filter(l => l.time.startsWith(selectedDate)) : [];
+  const recentLogs = [...logs].sort((a, b) => b.time.localeCompare(a.time)).slice(0, 5);
 
   const chartOptions = [
     { key: 'height', label: '高度', unit: 'cm', color: '#07c160' },
@@ -149,6 +152,29 @@ export default function PlantDetail() {
         {selectedDate && selectedLogs.length === 0 && (
           <div style={{ padding: '0 16px 12px', fontSize: '13px', color: 'var(--text-placeholder)' }}>
             {selectedDate} 无养护记录
+          </div>
+        )}
+        {!selectedDate && recentLogs.length > 0 && (
+          <div style={{ padding: '0 16px 12px' }}>
+            {recentLogs.map(log => (
+              <div key={log.id} className="cell" style={{ alignItems: 'flex-start' }}>
+                <div className="cell-icon" style={{ background: '#f5f5f5', borderRadius: '50%', width: '32px', height: '32px' }}>
+                  <Icon name={getTaskIcon(log.type)} size={16} color="var(--text-secondary)" />
+                </div>
+                <div className="cell-content">
+                  <div className="cell-title">{log.type}</div>
+                  <div className="cell-desc">{log.note}</div>
+                </div>
+                <span style={{ fontSize: '12px', color: 'var(--text-placeholder)', whiteSpace: 'nowrap' }}>
+                  {log.time.slice(5)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        {!selectedDate && recentLogs.length === 0 && (
+          <div style={{ padding: '0 16px 12px', fontSize: '13px', color: 'var(--text-placeholder)' }}>
+            暂无养护记录
           </div>
         )}
       </div>

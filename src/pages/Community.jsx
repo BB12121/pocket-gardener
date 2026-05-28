@@ -1,16 +1,16 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { communityPosts, communityUsers, followedUsers as initialFollowed, currentUser } from '../data/mockData';
 import Icon from '../components/Icon';
+import { useGardenData } from '../context/useGardenData';
 
 export default function Community() {
   const navigate = useNavigate();
+  const { communityPosts, followedUsers, currentUser, toggleUserFollow } = useGardenData();
   const [tab, setTab] = useState('推荐');
   const [filterType, setFilterType] = useState('all');
   const [sortBy, setSortBy] = useState('hot');
   const [showFilter, setShowFilter] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [followed, setFollowed] = useState(initialFollowed);
   const [slideClass, setSlideClass] = useState('');
   const [slideFrom, setSlideFrom] = useState('40px');
   const prevTabIndex = useRef(1);
@@ -35,16 +35,14 @@ export default function Community() {
   };
 
   const handleFollow = (userId) => {
-    setFollowed(prev =>
-      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
-    );
+    toggleUserFollow(userId);
   };
 
   const getFilteredPosts = () => {
     let posts = communityPosts;
 
     if (tab === '关注') {
-      posts = posts.filter(p => followed.includes(p.authorId));
+      posts = posts.filter(p => followedUsers.includes(p.authorId));
     } else if (tab === '我的') {
       posts = posts.filter(p => p.authorId === currentUser.id);
     }
@@ -72,9 +70,6 @@ export default function Community() {
   };
 
   const filtered = getFilteredPosts();
-  const filterLabel = filterType === 'all' ? '筛选' : filterType === '经验' ? '经验' : '求助';
-  const sortLabel = sortBy === 'hot' ? '热度' : '最新';
-
   return (
     <div className="page" style={{ position: 'relative' }}>
       <div className="section" style={{ paddingBottom: 0 }}>
@@ -142,7 +137,7 @@ export default function Community() {
           )}
 
           {filtered.map(post => {
-            const isFollowed = followed.includes(post.authorId);
+            const isFollowed = followedUsers.includes(post.authorId);
             const isMe = post.authorId === currentUser.id;
             return (
               <div key={post.id} className="section" style={{ padding: '16px' }}>

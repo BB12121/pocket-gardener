@@ -1,10 +1,11 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { plants, species, aiSuggestions, careLogs } from '../data/mockData';
+import { useGardenData } from '../context/useGardenData';
 
 export default function AiSuggestions() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { plants, species, aiSuggestions, careLogs, addSuggestion } = useGardenData();
   const plant = plants.find(p => p.id === id);
   const sp = species.find(s => s.id === plant?.speciesId);
   const suggestions = aiSuggestions.filter(a => a.plantId === id);
@@ -12,19 +13,14 @@ export default function AiSuggestions() {
   const [generating, setGenerating] = useState(false);
   const [newSuggestion, setNewSuggestion] = useState(null);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setGenerating(true);
-    setTimeout(() => {
-      setNewSuggestion({
-        id: 'new',
-        time: new Date().toLocaleString('zh-CN'),
-        risk: '低',
-        model: 'GPT-4o',
-        summary: `${plant.nickname}当前状态良好，建议保持现有养护频率`,
-        detail: `基于最近${logs.length}条养护记录分析：浇水频率适中，建议继续保持${sp?.waterCycle}天一次的节奏。近期气温升高，可适当增加通风时间。`
-      });
+    try {
+      const suggestion = await addSuggestion(id);
+      setNewSuggestion(suggestion);
+    } finally {
       setGenerating(false);
-    }, 2000);
+    }
   };
 
   if (!plant) return <div className="page"><div className="empty">植物不存在</div></div>;

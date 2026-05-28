@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Java / Spring Boot
+**/target/
+**/*.log
+**/data/*.db
+**/data/*.mv.db
+**/data/*.trace.db
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

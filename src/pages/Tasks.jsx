@@ -1,38 +1,55 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { careTasks, plants, species } from '../data/mockData';
-import Icon, { getTaskIcon } from '../components/Icon';
+import Icon from '../components/Icon';
 import SwipeCell from '../components/SwipeCell';
+import { useGardenData } from '../context/useGardenData';
+import { localDateTimeInputValue } from '../utils/date';
 
 export default function Tasks() {
-  const [tasks, setTasks] = useState(careTasks);
+  const { careTasks, plants, species, addTask, setTaskStatus, refresh } = useGardenData();
   const [showForm, setShowForm] = useState(false);
   const [sortBy, setSortBy] = useState('priority');
-  const [newTask, setNewTask] = useState({ plantId: 'p1', type: '浇水', planTime: '', priority: '中' });
+  const [newTask, setNewTask] = useState({ plantId: '', type: '浇水', planTime: '', priority: '中' });
+  const [formError, setFormError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleComplete = (taskId) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: '已完成' } : t));
+    setTaskStatus(taskId, '已完成');
   };
 
   const handlePostpone = (taskId) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: '已延期' } : t));
+    setTaskStatus(taskId, '已延期');
   };
 
   const handleIgnore = (taskId) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: '已忽略' } : t));
+    setTaskStatus(taskId, '已忽略');
   };
 
-  const handleAddTask = () => {
-    if (!newTask.planTime) return;
-    const task = {
-      id: `t${Date.now()}`,
+  const handleAddTask = async () => {
+    const taskToCreate = {
       ...newTask,
-      status: '待处理',
-      source: '手动创建',
+      plantId: newTask.plantId || plants[0]?.id || '',
     };
-    setTasks(prev => [task, ...prev]);
-    setShowForm(false);
-    setNewTask({ plantId: 'p1', type: '浇水', planTime: '', priority: '中' });
+    if (!taskToCreate.plantId) {
+      setFormError('请先选择植物');
+      return;
+    }
+    if (!taskToCreate.planTime) {
+      setFormError('请选择计划时间');
+      return;
+    }
+    setFormError('');
+    setSubmitting(true);
+    try {
+      await addTask(taskToCreate);
+      await refresh();
+      setShowForm(false);
+      setNewTask({ plantId: plants[0]?.id ?? '', type: '浇水', planTime: localDateTimeInputValue(), priority: '中' });
+    } catch (error) {
+      setFormError(error.message || '任务创建失败');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const sortTasks = (list) => {
@@ -45,15 +62,13 @@ export default function Tasks() {
     });
   };
 
-  const pending = sortTasks(tasks.filter(t => t.status === '待处理'));
-  const postponed = sortTasks(tasks.filter(t => t.status === '已延期'));
-  const done = sortTasks(tasks.filter(t => t.status === '已完成' || t.status === '已忽略'));
+  const pending = sortTasks(careTasks.filter(t => t.status === '待处理'));
+  const postponed = sortTasks(careTasks.filter(t => t.status === '已延期'));
+  const done = sortTasks(careTasks.filter(t => t.status === '已完成' || t.status === '已忽略'));
 
   const TaskItem = ({ task }) => {
     const plant = plants.find(p => p.id === task.plantId);
     const sp = species.find(s => s.id === plant?.speciesId);
-    const iconName = getTaskIcon(task.type);
-
     const actions = [];
     if (task.status === '待处理') {
       actions.push(
@@ -158,7 +173,15 @@ export default function Tasks() {
 
       <button
         className="fab"
-        onClick={() => setShowForm(true)}
+        onClick={() => {
+          setFormError('');
+          setNewTask(prev => ({
+            ...prev,
+            plantId: prev.plantId || plants[0]?.id || '',
+            planTime: prev.planTime || localDateTimeInputValue(),
+          }));
+          setShowForm(true);
+        }}
         aria-label="添加任务"
       >
         <Icon name="plus" size={24} color="#fff" />
@@ -217,9 +240,14 @@ export default function Tasks() {
                 </select>
               </div>
             </div>
+            {formError && (
+              <div className="auth-error" style={{ marginTop: '12px' }}>{formError}</div>
+            )}
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-              <button className="btn btn-default" style={{ flex: 1 }} onClick={() => setShowForm(false)}>取消</button>
-              <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleAddTask}>确认</button>
+              <button className="btn btn-default" style={{ flex: 1 }} onClick={() => setShowForm(false)} disabled={submitting}>取消</button>
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleAddTask} disabled={submitting}>
+                {submitting ? '创建中...' : '确认'}
+              </button>
             </div>
           </div>
         </div>

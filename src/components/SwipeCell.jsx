@@ -3,32 +3,54 @@ import { useRef, useState } from 'react';
 export default function SwipeCell({ children, actions = [] }) {
   const startX = useRef(0);
   const currentX = useRef(0);
+  const dragging = useRef(false);
   const [offset, setOffset] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const actionWidth = actions.length * 72;
 
-  const handleTouchStart = (e) => {
-    startX.current = e.touches[0].clientX;
+  const startSwipe = (clientX) => {
+    if (actionWidth === 0) return;
+    startX.current = clientX;
     currentX.current = offset;
+    dragging.current = true;
     setSwiping(true);
   };
 
-  const handleTouchMove = (e) => {
-    if (!swiping) return;
-    const diff = e.touches[0].clientX - startX.current;
+  const moveSwipe = (clientX) => {
+    if (!dragging.current || actionWidth === 0) return;
+    const diff = clientX - startX.current;
     let newOffset = currentX.current + diff;
     if (newOffset > 0) newOffset = 0;
     if (newOffset < -actionWidth) newOffset = -actionWidth;
     setOffset(newOffset);
   };
 
-  const handleTouchEnd = () => {
+  const endSwipe = () => {
+    if (!dragging.current) return;
+    dragging.current = false;
     setSwiping(false);
     if (offset < -actionWidth / 2) {
       setOffset(-actionWidth);
     } else {
       setOffset(0);
     }
+  };
+
+  const handleTouchStart = (e) => startSwipe(e.touches[0].clientX);
+  const handleTouchMove = (e) => moveSwipe(e.touches[0].clientX);
+  const handleTouchEnd = () => endSwipe();
+  const handlePointerDown = (e) => {
+    if (e.pointerType === 'touch') return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    startSwipe(e.clientX);
+  };
+  const handlePointerMove = (e) => {
+    if (e.pointerType === 'touch') return;
+    moveSwipe(e.clientX);
+  };
+  const handlePointerUp = (e) => {
+    if (e.pointerType === 'touch') return;
+    endSwipe();
   };
 
   const close = () => setOffset(0);
@@ -42,10 +64,16 @@ export default function SwipeCell({ children, actions = [] }) {
           position: 'relative',
           zIndex: 1,
           background: 'var(--white)',
+          touchAction: 'pan-y',
+          cursor: actionWidth ? 'grab' : 'default',
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
       >
         {children}
       </div>

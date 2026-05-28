@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { localDateString } from '../utils/date';
 
 export default function Heatmap({ activeDates, color = 'var(--green)', onDayClick }) {
   const [selected, setSelected] = useState(null);
 
-  const today = new Date('2026-05-07');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const dayOfWeek = today.getDay();
 
   const cellSize = 11;
@@ -13,7 +15,7 @@ export default function Heatmap({ activeDates, color = 'var(--green)', onDayClic
   const weeks = Math.floor((availableWidth + gap) / (cellSize + gap));
 
   const startDate = new Date(today);
-  startDate.setDate(startDate.getDate() - (weeks * 7 - 1) - dayOfWeek);
+  startDate.setDate(startDate.getDate() - ((weeks - 1) * 7 + dayOfWeek));
 
   const totalDays = weeks * 7;
   const days = [];
@@ -83,7 +85,7 @@ export default function Heatmap({ activeDates, color = 'var(--green)', onDayClic
           gridAutoFlow: 'column',
         }}>
           {days.map((date, idx) => {
-            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            const dateStr = localDateString(date);
             const count = countMap[dateStr] || 0;
             const isFuture = date > today;
             const isSelected = selected === dateStr;

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { plants } from '../data/mockData';
 import Icon from '../components/Icon';
+import { useGardenData } from '../context/useGardenData';
 
 export default function AddLog() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { plants, addLog, refresh } = useGardenData();
   const plant = plants.find(p => p.id === id);
   const [logType, setLogType] = useState('浇水');
   const [note, setNote] = useState('');
@@ -14,8 +15,10 @@ export default function AddLog() {
 
   const logTypes = ['浇水', '施肥', '修剪', '换盆', '病虫害', '其他'];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    await addLog({ plantId: id, type: logType, note, status });
+    await refresh();
     setSubmitted(true);
     setTimeout(() => navigate(-1), 1500);
   };

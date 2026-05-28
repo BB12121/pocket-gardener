@@ -1,14 +1,25 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { communityUsers, communityPosts, followedUsers as initialFollowed, currentUser } from '../data/mockData';
+import { useParams, useNavigate } from 'react-router-dom';
 import Icon from '../components/Icon';
+import { useGardenData } from '../context/useGardenData';
 
 export default function UserProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { communityUsers, communityPosts, followedUsers, toggleUserFollow } = useGardenData();
   const user = communityUsers.find(u => u.id === id);
-  const [followed, setFollowed] = useState(initialFollowed.includes(id));
+  const [busy, setBusy] = useState(false);
+  const followed = followedUsers.includes(id);
   const userPosts = communityPosts.filter(p => p.authorId === id);
+
+  const handleFollow = async () => {
+    setBusy(true);
+    try {
+      await toggleUserFollow(id);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (!user) return <div className="page"><div className="empty">用户不存在</div></div>;
 
@@ -30,7 +41,8 @@ export default function UserProfile() {
         <div style={{ marginTop: '12px' }}>
           <button
             className={`btn btn-sm ${followed ? 'btn-default' : 'btn-primary'}`}
-            onClick={() => setFollowed(!followed)}
+            onClick={handleFollow}
+            disabled={busy}
           >
             {followed ? '已关注' : '关注'}
           </button>

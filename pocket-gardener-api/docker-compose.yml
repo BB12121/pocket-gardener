@@ -1,0 +1,18 @@
+services:
+  mysql:
+    image: mysql:8.0.40-debian
+    container_name: pocket-gardener-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: pocket_gardener
+      TZ: Asia/Shanghai
+    ports:
+      - "3307:3306"
+    volumes:
+      - pocket_gardener_mysql:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+
+volumes:
+  pocket_gardener_mysql:

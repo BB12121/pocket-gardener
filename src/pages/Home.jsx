@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
-import { plants, species, careTasks, weatherAlerts } from '../data/mockData';
-import Icon, { getPlantIcon, getTaskIcon } from '../components/Icon';
+import Icon from '../components/Icon';
+import { getPlantIcon } from '../components/iconMapping';
+import { useGardenData } from '../context/useGardenData';
 
 export default function Home() {
+  const { plants, species, careTasks, weatherAlerts, apiOnline } = useGardenData();
   const pendingTasks = careTasks.filter(t => t.status === '待处理');
   const activeAlerts = weatherAlerts.length;
 
@@ -13,7 +15,7 @@ export default function Home() {
           <div>
             <div style={{ fontSize: '20px', fontWeight: '500' }}>我的花园</div>
             <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              {pendingTasks.length} 个待办任务
+              {pendingTasks.length} 个待办任务 · {apiOnline ? '后端已连接' : '演示数据'}
             </div>
           </div>
           <Link to="/weather" style={{

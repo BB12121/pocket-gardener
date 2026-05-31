@@ -38,6 +38,9 @@ public final class DomainModels {
                                 String time, int likes, int comments, List<String> tags, String urgent, List<String> images) {
     }
 
+    public record PostComment(String id, String postId, String authorId, String author, String content, String time) {
+    }
+
     public record Achievement(String id, String name, String desc, boolean achieved, int progress, int target) {
     }
 

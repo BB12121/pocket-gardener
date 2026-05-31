@@ -69,4 +69,12 @@ public class CommunityPostEntity {
     public List<String> getTags() { return tags; }
     public String getUrgent() { return urgent; }
     public List<String> getImages() { return images; }
+
+    public void incrementLikes() {
+        this.likes += 1;
+    }
+
+    public void incrementComments() {
+        this.comments += 1;
+    }
 }

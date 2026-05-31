@@ -43,6 +43,10 @@ public final class GardenMapper {
         return new CommunityPost(item.getId(), item.getType(), item.getAuthorId(), item.getAuthor(), item.getTitle(), item.getContent(), item.getTime(), item.getLikes(), item.getComments(), item.getTags(), item.getUrgent(), item.getImages());
     }
 
+    public static PostComment toDto(PostCommentEntity item) {
+        return new PostComment(item.getId(), item.getPostId(), item.getAuthorId(), item.getAuthor(), item.getContent(), item.getTime());
+    }
+
     public static Achievement toDto(AchievementEntity item) {
         return new Achievement(item.getId(), item.getName(), item.getDesc(), item.isAchieved(), item.getProgress(), item.getTarget());
     }

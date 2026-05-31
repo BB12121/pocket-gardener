@@ -7,7 +7,7 @@ async function loadApiModule() {
   const testableSource = source
     .replace("import * as mockData from '../data/mockData';", 'const mockData = {};')
     .replace(
-      "const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080/api';",
+      "const API_BASE = import.meta.env.VITE_API_BASE ?? (isNativeApp ? DEFAULT_ANDROID_API_BASE : DEFAULT_WEB_API_BASE);",
       "const API_BASE = 'http://localhost:8080/api';",
     );
 
@@ -75,4 +75,31 @@ test('unauthorized responses clear the saved token and notify the app', async ()
 
   assert.equal(storage.has('pocket-gardener-token'), false);
   assert.equal(notified, true);
+});
+
+test('community interaction helpers call the post interaction endpoints', async () => {
+  const calls = [];
+  globalThis.localStorage = {
+    getItem: () => 'token',
+    setItem: () => {},
+    removeItem: () => {},
+  };
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, options });
+    return {
+      ok: true,
+      json: async () => ({ ok: true }),
+    };
+  };
+
+  const api = await loadApiModule();
+
+  await api.likePost('c1');
+  await api.addPostComment('c1', '这条经验很有帮助');
+
+  assert.equal(calls[0].url, 'http://localhost:8080/api/posts/c1/like');
+  assert.equal(calls[0].options.method, 'POST');
+  assert.equal(calls[1].url, 'http://localhost:8080/api/posts/c1/comments');
+  assert.equal(calls[1].options.method, 'POST');
+  assert.equal(calls[1].options.body, JSON.stringify({ content: '这条经验很有帮助' }));
 });

@@ -8,6 +8,7 @@ import Tasks from './pages/Tasks';
 import AiSuggestions from './pages/AiSuggestions';
 import Community from './pages/Community';
 import NewPost from './pages/NewPost';
+import PostDetail from './pages/PostDetail';
 import UserProfile from './pages/UserProfile';
 import Weather from './pages/Weather';
 import Profile from './pages/Profile';
@@ -70,6 +71,7 @@ function AnimatedRoutes() {
           <Route path="/weather" element={<Weather />} />
           <Route path="/add-plant" element={<AddPlant />} />
           <Route path="/community/new-post" element={<NewPost />} />
+          <Route path="/community/post/:id" element={<PostDetail />} />
           <Route path="/community/user/:id" element={<UserProfile />} />
         </Routes>
       </div>

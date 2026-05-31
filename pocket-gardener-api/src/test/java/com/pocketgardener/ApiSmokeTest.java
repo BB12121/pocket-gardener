@@ -64,4 +64,35 @@ class ApiSmokeTest {
                 .andExpect(jsonPath("$.nickname").value("新绿"))
                 .andExpect(jsonPath("$.status").value("健康"));
     }
+
+    @Test
+    void careLogCanBeCreatedThroughUseCaseController() throws Exception {
+        mockMvc.perform(post("/api/logs")
+                        .header("Authorization", "Bearer " + demoToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"plantId\":\"p1\",\"type\":\"浇水\",\"note\":\"盆土偏干\",\"status\":\"正常\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plantId").value("p1"))
+                .andExpect(jsonPath("$.type").value("浇水"))
+                .andExpect(jsonPath("$.note").value("盆土偏干"));
+    }
+    @Test
+    void communityPostCanBeLikedAndCommented() throws Exception {
+        String token = demoToken();
+
+        mockMvc.perform(post("/api/posts/c1/like")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("c1"))
+                .andExpect(jsonPath("$.likes", greaterThanOrEqualTo(43)));
+
+        mockMvc.perform(post("/api/posts/c1/comments")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"这条经验很有帮助\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.post.id").value("c1"))
+                .andExpect(jsonPath("$.post.comments", greaterThanOrEqualTo(9)))
+                .andExpect(jsonPath("$.comments[0].content").value("这条经验很有帮助"));
+    }
 }

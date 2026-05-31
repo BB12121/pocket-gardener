@@ -52,6 +52,12 @@ public final class GardenDtos {
                                     @NotBlank String content, List<String> tags) {
     }
 
+    public record CreateCommentRequest(@NotBlank String content) {
+    }
+
+    public record CommunityPostCommentsResponse(CommunityPost post, List<PostComment> comments) {
+    }
+
     public record LoginRequest(@NotBlank String loginName, @NotBlank String password) {
     }
 

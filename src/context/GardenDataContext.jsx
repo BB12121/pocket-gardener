@@ -4,8 +4,11 @@ import {
   createPlant,
   createPost,
   createTask,
+  addPostComment,
   fetchGarden,
+  fetchPostComments,
   generateSuggestion,
+  likePost,
   mockSnapshot,
   toggleFollow,
   updateTaskStatus,
@@ -164,6 +167,49 @@ export function GardenDataProvider({ children }) {
           };
       setData(prev => ({ ...prev, communityPosts: [created, ...prev.communityPosts] }));
       return created;
+    },
+    async likeCommunityPost(postId) {
+      const current = data.communityPosts.find(post => post.id === postId);
+      const updated = apiOnline
+        ? await likePost(postId)
+        : { ...current, likes: (current?.likes ?? 0) + 1 };
+      setData(prev => ({
+        ...prev,
+        communityPosts: prev.communityPosts.map(post => post.id === postId ? updated : post),
+      }));
+      return updated;
+    },
+    async getPostComments(postId) {
+      if (apiOnline) {
+        return fetchPostComments(postId);
+      }
+      const post = data.communityPosts.find(item => item.id === postId);
+      return { post, comments: [] };
+    },
+    async commentOnPost(postId, content) {
+      if (apiOnline) {
+        const result = await addPostComment(postId, content);
+        setData(prev => ({
+          ...prev,
+          communityPosts: prev.communityPosts.map(post => post.id === postId ? result.post : post),
+        }));
+        return result;
+      }
+      const post = data.communityPosts.find(item => item.id === postId);
+      const updated = { ...post, comments: (post?.comments ?? 0) + 1 };
+      const comment = {
+        id: `cm${Date.now()}`,
+        postId,
+        authorId: data.currentUser.id,
+        author: data.currentUser.username,
+        content,
+        time: localDateTimeString(),
+      };
+      setData(prev => ({
+        ...prev,
+        communityPosts: prev.communityPosts.map(item => item.id === postId ? updated : item),
+      }));
+      return { post: updated, comments: [comment] };
     },
     async toggleUserFollow(userId) {
       const followedUsers = apiOnline

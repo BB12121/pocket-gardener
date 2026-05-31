@@ -5,7 +5,7 @@ import { useGardenData } from '../context/useGardenData';
 
 export default function Community() {
   const navigate = useNavigate();
-  const { communityPosts, followedUsers, currentUser, toggleUserFollow } = useGardenData();
+  const { communityPosts, followedUsers, currentUser, toggleUserFollow, likeCommunityPost } = useGardenData();
   const [tab, setTab] = useState('推荐');
   const [filterType, setFilterType] = useState('all');
   const [sortBy, setSortBy] = useState('hot');
@@ -13,6 +13,7 @@ export default function Community() {
   const [searchQuery, setSearchQuery] = useState('');
   const [slideClass, setSlideClass] = useState('');
   const [slideFrom, setSlideFrom] = useState('40px');
+  const [likingId, setLikingId] = useState('');
   const prevTabIndex = useRef(1);
 
   const tabs = ['关注', '推荐', '我的'];
@@ -21,36 +22,42 @@ export default function Community() {
     if (newTab === tab) return;
     const newIndex = tabs.indexOf(newTab);
     const oldIndex = prevTabIndex.current;
-    const direction = newIndex > oldIndex ? 'slide-left' : 'slide-right';
     setSlideFrom(newIndex > oldIndex ? '40px' : '-40px');
-    setSlideClass(direction);
+    setSlideClass(newIndex > oldIndex ? 'slide-left' : 'slide-right');
     setTimeout(() => {
       setTab(newTab);
       prevTabIndex.current = newIndex;
       setSlideClass('slide-enter');
     }, 200);
-    setTimeout(() => {
-      setSlideClass('');
-    }, 550);
+    setTimeout(() => setSlideClass(''), 550);
   };
 
-  const handleFollow = (userId) => {
+  const handleFollow = (event, userId) => {
+    event.stopPropagation();
     toggleUserFollow(userId);
   };
 
-  const getFilteredPosts = () => {
-    let posts = communityPosts;
+  const handleLike = async (event, postId) => {
+    event.stopPropagation();
+    if (likingId) return;
+    setLikingId(postId);
+    try {
+      await likeCommunityPost(postId);
+    } finally {
+      setLikingId('');
+    }
+  };
 
+  const filtered = (() => {
+    let posts = communityPosts;
     if (tab === '关注') {
       posts = posts.filter(p => followedUsers.includes(p.authorId));
     } else if (tab === '我的') {
       posts = posts.filter(p => p.authorId === currentUser.id);
     }
-
     if (filterType !== 'all') {
       posts = posts.filter(p => p.type === filterType);
     }
-
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       posts = posts.filter(p =>
@@ -59,17 +66,9 @@ export default function Community() {
         p.tags.some(t => t.toLowerCase().includes(q))
       );
     }
+    return [...posts].sort((a, b) => sortBy === 'hot' ? b.likes - a.likes : b.time.localeCompare(a.time));
+  })();
 
-    if (sortBy === 'hot') {
-      posts = [...posts].sort((a, b) => b.likes - a.likes);
-    } else {
-      posts = [...posts].sort((a, b) => b.time.localeCompare(a.time));
-    }
-
-    return posts;
-  };
-
-  const filtered = getFilteredPosts();
   return (
     <div className="page" style={{ position: 'relative' }}>
       <div className="section" style={{ paddingBottom: 0 }}>
@@ -98,6 +97,7 @@ export default function Community() {
             className="btn-text flex-center gap-8"
             onClick={() => setShowFilter(!showFilter)}
             style={{ fontSize: '13px', position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)' }}
+            aria-label="筛选"
           >
             <Icon name={showFilter ? 'chevron-up' : 'chevron-down'} size={12} color="var(--green)" />
           </button>
@@ -140,22 +140,27 @@ export default function Community() {
             const isFollowed = followedUsers.includes(post.authorId);
             const isMe = post.authorId === currentUser.id;
             return (
-              <div key={post.id} className="section" style={{ padding: '16px' }}>
+              <article
+                key={post.id}
+                className="section community-card"
+                style={{ padding: '16px', cursor: 'pointer' }}
+                onClick={() => navigate(`/community/post/${post.id}`)}
+              >
                 <div className="flex-center gap-8" style={{ marginBottom: '10px' }}>
-                  <Link to={`/community/user/${post.authorId}`}>
+                  <Link to={`/community/user/${post.authorId}`} onClick={event => event.stopPropagation()}>
                     <div className="avatar avatar-round" style={{ width: '32px', height: '32px', fontSize: '14px' }}>
                       {post.author.charAt(0)}
                     </div>
                   </Link>
                   <div style={{ flex: 1 }}>
-                    <Link to={`/community/user/${post.authorId}`} style={{ fontSize: '14px', fontWeight: '500' }}>
+                    <Link to={`/community/user/${post.authorId}`} onClick={event => event.stopPropagation()} style={{ fontSize: '14px', fontWeight: '500' }}>
                       {post.author}
                     </Link>
                   </div>
                   {!isMe && !isFollowed && (
                     <button
                       className="btn btn-sm btn-default"
-                      onClick={() => handleFollow(post.authorId)}
+                      onClick={event => handleFollow(event, post.authorId)}
                       style={{ fontSize: '12px', padding: '0 8px', height: '24px' }}
                     >
                       + 关注
@@ -165,11 +170,11 @@ export default function Community() {
                     <span style={{ fontSize: '12px', color: 'var(--text-placeholder)' }}>已关注</span>
                   )}
                 </div>
-                <div style={{ fontSize: '16px', fontWeight: '500', marginBottom: '6px' }}>{post.title}</div>
+                <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>{post.title}</div>
                 <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-                  {post.content.length > 80 ? post.content.slice(0, 80) + '...' : post.content}
+                  {post.content.length > 80 ? `${post.content.slice(0, 80)}...` : post.content}
                 </div>
-                {post.images && post.images.length > 0 && (
+                {post.images?.length > 0 && (
                   <div className="flex gap-8" style={{ marginTop: '10px', overflowX: 'auto' }}>
                     {post.images.map((img, i) => (
                       <img key={i} src={img} alt="" style={{
@@ -185,16 +190,16 @@ export default function Community() {
                   {post.type === '求助' && <span className="tag tag-red">求助</span>}
                 </div>
                 <div className="flex gap-12" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '0.5px solid var(--divider)' }}>
-                  <span className="flex-center gap-8" style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    <Icon name="heart" size={14} color="var(--text-secondary)" /> {post.likes}
-                  </span>
+                  <button className="post-action" onClick={event => handleLike(event, post.id)} disabled={likingId === post.id}>
+                    <Icon name="heart" size={14} color="var(--red)" /> {post.likes}
+                  </button>
                   <span className="flex-center gap-8" style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                     <Icon name="comment" size={14} color="var(--text-secondary)" /> {post.comments}
                   </span>
                   <span style={{ flex: 1 }} />
                   <span style={{ fontSize: '12px', color: 'var(--text-placeholder)' }}>{post.time}</span>
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
@@ -203,7 +208,7 @@ export default function Community() {
       <button
         className="fab"
         onClick={() => navigate('/community/new-post')}
-        aria-label="发帖"
+        aria-label="发布"
       >
         <Icon name="plus" size={24} color="#fff" />
       </button>

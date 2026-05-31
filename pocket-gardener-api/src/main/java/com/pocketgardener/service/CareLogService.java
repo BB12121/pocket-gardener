@@ -1,0 +1,57 @@
+package com.pocketgardener.service;
+
+import com.pocketgardener.dto.GardenDtos.CreateLogRequest;
+import com.pocketgardener.entity.CareLogEntity;
+import com.pocketgardener.entity.CheckinDayEntity;
+import com.pocketgardener.mapper.GardenMapper;
+import com.pocketgardener.model.DomainModels.CareLog;
+import com.pocketgardener.repository.CareLogRepository;
+import com.pocketgardener.repository.CheckinDayRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+@Service
+public class CareLogService {
+    private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+    private final BusinessIdGenerator idGenerator;
+    private final PlantLookupService plantLookupService;
+    private final CareLogRepository careLogRepository;
+    private final CheckinDayRepository checkinDayRepository;
+
+    public CareLogService(BusinessIdGenerator idGenerator,
+                          PlantLookupService plantLookupService,
+                          CareLogRepository careLogRepository,
+                          CheckinDayRepository checkinDayRepository) {
+        this.idGenerator = idGenerator;
+        this.plantLookupService = plantLookupService;
+        this.careLogRepository = careLogRepository;
+        this.checkinDayRepository = checkinDayRepository;
+    }
+
+    @Transactional
+    public CareLog createLog(CreateLogRequest request) {
+        plantLookupService.requirePlant(request.plantId());
+        CareLogEntity log = new CareLogEntity(
+                idGenerator.nextId("l"),
+                request.plantId(),
+                request.type(),
+                LocalDateTime.now().format(DATE_TIME),
+                blankToDefault(request.note(), "无备注"),
+                blankToDefault(request.status(), "正常")
+        );
+        String today = LocalDate.now().toString();
+        if (!checkinDayRepository.existsById(today)) {
+            checkinDayRepository.save(new CheckinDayEntity(today));
+        }
+        return GardenMapper.toDto(careLogRepository.save(log));
+    }
+
+    private String blankToDefault(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
+    }
+}

@@ -1,6 +1,9 @@
 import * as mockData from '../data/mockData';
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080/api';
+const DEFAULT_WEB_API_BASE = 'http://localhost:8080/api';
+const DEFAULT_ANDROID_API_BASE = 'http://10.0.2.2:8081/api';
+const isNativeApp = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
+const API_BASE = import.meta.env.VITE_API_BASE ?? (isNativeApp ? DEFAULT_ANDROID_API_BASE : DEFAULT_WEB_API_BASE);
 export const AUTH_TOKEN_KEY = 'pocket-gardener-token';
 let authToken = '';
 
@@ -136,6 +139,23 @@ export async function createPost(payload) {
   return request('/posts', {
     method: 'POST',
     body: JSON.stringify(payload),
+  });
+}
+
+export async function likePost(postId) {
+  return request(`/posts/${postId}/like`, {
+    method: 'POST',
+  });
+}
+
+export async function fetchPostComments(postId) {
+  return request(`/posts/${postId}/comments`);
+}
+
+export async function addPostComment(postId, content) {
+  return request(`/posts/${postId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
   });
 }
 

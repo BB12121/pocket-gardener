@@ -93,6 +93,32 @@ npm run dev
 
 前端默认运行在 `http://localhost:5173`。前端默认请求 `http://localhost:8080/api`，后端不可用时会使用内置演示数据兜底。
 
+## Android 调试包
+
+项目已接入 Capacitor Android。Android 工程位于 `android/`，本地 SDK 路径写在 `android/local.properties` 中，该文件不会提交到 Git。
+
+```bash
+npm run android:sync
+cd android
+./gradlew assembleDebug
+```
+
+Windows PowerShell 可使用：
+
+```powershell
+npm run android:sync
+cd android
+.\gradlew.bat assembleDebug
+```
+
+调试 APK 输出位置：
+
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Android 模拟器访问电脑本机后端时使用 `http://10.0.2.2:8081/api`。运行手机端调试包前，请确保 MySQL 已启动、后端已运行在 `8081`，并且后端环境变量只保存在本机或部署平台。
+
 ## 演示账号
 
 | 用户名 | 密码 |

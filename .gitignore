@@ -29,3 +29,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local debugging screenshots
+android-screen.png
+android-after-login.png

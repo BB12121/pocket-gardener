@@ -4,14 +4,16 @@ import com.pocketgardener.dto.GardenDtos.CommunityPostCommentsResponse;
 import com.pocketgardener.dto.GardenDtos.CreateCommentRequest;
 import com.pocketgardener.dto.GardenDtos.CreatePostRequest;
 import com.pocketgardener.entity.CommunityPostEntity;
-import com.pocketgardener.entity.FollowedUserEntity;
+import com.pocketgardener.entity.CommunityFollowEntity;
 import com.pocketgardener.entity.PostCommentEntity;
+import com.pocketgardener.entity.PostLikeEntity;
 import com.pocketgardener.entity.UserEntity;
 import com.pocketgardener.mapper.GardenMapper;
 import com.pocketgardener.model.DomainModels.CommunityPost;
 import com.pocketgardener.repository.CommunityPostRepository;
-import com.pocketgardener.repository.FollowedUserRepository;
+import com.pocketgardener.repository.CommunityFollowRepository;
 import com.pocketgardener.repository.PostCommentRepository;
+import com.pocketgardener.repository.PostLikeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,17 +28,20 @@ public class CommunityService {
 
     private final BusinessIdGenerator idGenerator;
     private final CommunityPostRepository communityPostRepository;
-    private final FollowedUserRepository followedUserRepository;
+    private final CommunityFollowRepository communityFollowRepository;
     private final PostCommentRepository postCommentRepository;
+    private final PostLikeRepository postLikeRepository;
 
     public CommunityService(BusinessIdGenerator idGenerator,
                             CommunityPostRepository communityPostRepository,
-                            FollowedUserRepository followedUserRepository,
-                            PostCommentRepository postCommentRepository) {
+                            CommunityFollowRepository communityFollowRepository,
+                            PostCommentRepository postCommentRepository,
+                            PostLikeRepository postLikeRepository) {
         this.idGenerator = idGenerator;
         this.communityPostRepository = communityPostRepository;
-        this.followedUserRepository = followedUserRepository;
+        this.communityFollowRepository = communityFollowRepository;
         this.postCommentRepository = postCommentRepository;
+        this.postLikeRepository = postLikeRepository;
     }
 
     @Transactional
@@ -55,20 +60,29 @@ public class CommunityService {
                 "求助".equals(request.type()) ? "中" : null,
                 List.of()
         );
-        return GardenMapper.toDto(communityPostRepository.save(post));
+        return GardenMapper.toDto(communityPostRepository.save(post), false);
     }
 
     @Transactional
-    public CommunityPost likePost(String postId) {
+    public CommunityPost toggleLike(UserEntity currentUser, String postId) {
         CommunityPostEntity post = requirePost(postId);
-        post.incrementLikes();
-        return GardenMapper.toDto(communityPostRepository.save(post));
+        return postLikeRepository.findByPostIdAndUserId(postId, currentUser.getId())
+                .map(like -> {
+                    postLikeRepository.delete(like);
+                    post.decrementLikes();
+                    return GardenMapper.toDto(communityPostRepository.save(post), false);
+                })
+                .orElseGet(() -> {
+                    postLikeRepository.save(new PostLikeEntity(postId, currentUser.getId()));
+                    post.incrementLikes();
+                    return GardenMapper.toDto(communityPostRepository.save(post), true);
+                });
     }
 
     @Transactional(readOnly = true)
-    public CommunityPostCommentsResponse postComments(String postId) {
+    public CommunityPostCommentsResponse postComments(UserEntity currentUser, String postId) {
         CommunityPostEntity post = requirePost(postId);
-        return responseFor(post);
+        return responseFor(currentUser, post);
     }
 
     @Transactional
@@ -89,17 +103,24 @@ public class CommunityService {
         postCommentRepository.save(comment);
         post.incrementComments();
         CommunityPostEntity savedPost = communityPostRepository.save(post);
-        return responseFor(savedPost);
+        return responseFor(currentUser, savedPost);
     }
 
     @Transactional
-    public List<String> toggleFollow(String userId) {
-        if (followedUserRepository.existsById(userId)) {
-            followedUserRepository.deleteById(userId);
-        } else {
-            followedUserRepository.save(new FollowedUserEntity(userId));
-        }
-        return followedUserRepository.findAll().stream().map(FollowedUserEntity::getUserId).toList();
+    public List<String> toggleFollow(UserEntity currentUser, String userId) {
+        communityFollowRepository.findByFollowerUserIdAndTargetUserId(currentUser.getId(), userId)
+                .ifPresentOrElse(
+                        communityFollowRepository::delete,
+                        () -> communityFollowRepository.save(new CommunityFollowEntity(currentUser.getId(), userId))
+                );
+        return followedUserIds(currentUser.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> followedUserIds(String currentUserId) {
+        return communityFollowRepository.findByFollowerUserId(currentUserId).stream()
+                .map(CommunityFollowEntity::getTargetUserId)
+                .toList();
     }
 
     private CommunityPostEntity requirePost(String postId) {
@@ -107,9 +128,9 @@ public class CommunityService {
                 .orElseThrow(() -> new IllegalArgumentException("帖子不存在: " + postId));
     }
 
-    private CommunityPostCommentsResponse responseFor(CommunityPostEntity post) {
+    private CommunityPostCommentsResponse responseFor(UserEntity currentUser, CommunityPostEntity post) {
         return new CommunityPostCommentsResponse(
-                GardenMapper.toDto(post),
+                GardenMapper.toDto(post, postLikeRepository.existsByPostIdAndUserId(post.getId(), currentUser.getId())),
                 postCommentRepository.findByPostIdOrderByTimeDesc(post.getId()).stream()
                         .map(GardenMapper::toDto)
                         .toList()

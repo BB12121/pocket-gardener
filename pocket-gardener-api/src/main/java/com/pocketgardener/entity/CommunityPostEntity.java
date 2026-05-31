@@ -74,6 +74,10 @@ public class CommunityPostEntity {
         this.likes += 1;
     }
 
+    public void decrementLikes() {
+        this.likes = Math.max(0, this.likes - 1);
+    }
+
     public void incrementComments() {
         this.comments += 1;
     }

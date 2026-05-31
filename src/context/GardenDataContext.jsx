@@ -172,7 +172,11 @@ export function GardenDataProvider({ children }) {
       const current = data.communityPosts.find(post => post.id === postId);
       const updated = apiOnline
         ? await likePost(postId)
-        : { ...current, likes: (current?.likes ?? 0) + 1 };
+        : {
+            ...current,
+            likedByCurrentUser: !current?.likedByCurrentUser,
+            likes: Math.max(0, (current?.likes ?? 0) + (current?.likedByCurrentUser ? -1 : 1)),
+          };
       setData(prev => ({
         ...prev,
         communityPosts: prev.communityPosts.map(post => post.id === postId ? updated : post),

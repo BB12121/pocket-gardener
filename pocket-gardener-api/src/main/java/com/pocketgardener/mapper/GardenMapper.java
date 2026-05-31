@@ -40,7 +40,11 @@ public final class GardenMapper {
     }
 
     public static CommunityPost toDto(CommunityPostEntity item) {
-        return new CommunityPost(item.getId(), item.getType(), item.getAuthorId(), item.getAuthor(), item.getTitle(), item.getContent(), item.getTime(), item.getLikes(), item.getComments(), item.getTags(), item.getUrgent(), item.getImages());
+        return toDto(item, false);
+    }
+
+    public static CommunityPost toDto(CommunityPostEntity item, boolean likedByCurrentUser) {
+        return new CommunityPost(item.getId(), item.getType(), item.getAuthorId(), item.getAuthor(), item.getTitle(), item.getContent(), item.getTime(), item.getLikes(), item.getComments(), item.getTags(), item.getUrgent(), item.getImages(), likedByCurrentUser);
     }
 
     public static PostComment toDto(PostCommentEntity item) {

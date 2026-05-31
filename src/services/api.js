@@ -65,7 +65,7 @@ export function mockSnapshot() {
     weatherAlerts: mockData.weatherAlerts,
     communityUsers: mockData.communityUsers,
     followedUsers: mockData.followedUsers,
-    communityPosts: mockData.communityPosts,
+    communityPosts: mockData.communityPosts.map(post => ({ ...post, likedByCurrentUser: false })),
     achievements: mockData.achievements,
     plantGrowthData: mockData.plantGrowthData,
     checkinDays: mockData.checkinDays,

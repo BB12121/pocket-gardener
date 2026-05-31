@@ -84,7 +84,8 @@ class ApiSmokeTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("c1"))
-                .andExpect(jsonPath("$.likes", greaterThanOrEqualTo(43)));
+                .andExpect(jsonPath("$.likes", greaterThanOrEqualTo(43)))
+                .andExpect(jsonPath("$.likedByCurrentUser").value(true));
 
         mockMvc.perform(post("/api/posts/c1/comments")
                         .header("Authorization", "Bearer " + token)
@@ -94,5 +95,52 @@ class ApiSmokeTest {
                 .andExpect(jsonPath("$.post.id").value("c1"))
                 .andExpect(jsonPath("$.post.comments", greaterThanOrEqualTo(9)))
                 .andExpect(jsonPath("$.comments[0].content").value("这条经验很有帮助"));
+    }
+    @Test
+    void communityPostLikeTogglesForCurrentUser() throws Exception {
+        String token = demoToken();
+        String postId = "c2";
+        int initialLikes = 5;
+
+        mockMvc.perform(post("/api/posts/" + postId + "/like")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.likedByCurrentUser").value(true))
+                .andExpect(jsonPath("$.likes").value(initialLikes + 1));
+
+        mockMvc.perform(post("/api/posts/" + postId + "/like")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.likedByCurrentUser").value(false))
+                .andExpect(jsonPath("$.likes").value(initialLikes));
+    }
+
+    @Test
+    void followStateIsScopedToCurrentUser() throws Exception {
+        String demoToken = demoToken();
+
+        String otherToken = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"loginName\":\"other-user\",\"password\":\"123456\",\"username\":\"other\",\"city\":\"shanghai\"}"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString()
+                .replaceAll(".*\"token\":\"([^\"]+)\".*", "$1");
+
+        mockMvc.perform(post("/api/community-users/cu2/follow")
+                        .header("Authorization", "Bearer " + otherToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@=='cu2')]").exists());
+
+        mockMvc.perform(get("/api/garden")
+                        .header("Authorization", "Bearer " + demoToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.followedUsers[?(@=='cu2')]").doesNotExist());
+
+        mockMvc.perform(get("/api/garden")
+                        .header("Authorization", "Bearer " + otherToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.followedUsers[?(@=='cu2')]").exists());
     }
 }

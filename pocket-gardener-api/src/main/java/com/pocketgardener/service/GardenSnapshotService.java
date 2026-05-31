@@ -5,7 +5,7 @@ import com.pocketgardener.entity.AiSuggestionEntity;
 import com.pocketgardener.entity.CareLogEntity;
 import com.pocketgardener.entity.CheckinDayEntity;
 import com.pocketgardener.entity.CommunityPostEntity;
-import com.pocketgardener.entity.FollowedUserEntity;
+import com.pocketgardener.entity.PostLikeEntity;
 import com.pocketgardener.entity.UserEntity;
 import com.pocketgardener.mapper.GardenMapper;
 import com.pocketgardener.model.DomainModels.CurrentWeather;
@@ -19,7 +19,7 @@ import com.pocketgardener.repository.CareTaskRepository;
 import com.pocketgardener.repository.CheckinDayRepository;
 import com.pocketgardener.repository.CommunityPostRepository;
 import com.pocketgardener.repository.CommunityUserRepository;
-import com.pocketgardener.repository.FollowedUserRepository;
+import com.pocketgardener.repository.PostLikeRepository;
 import com.pocketgardener.repository.PlantRepository;
 import com.pocketgardener.repository.SpeciesRepository;
 import com.pocketgardener.repository.WeatherAlertRepository;
@@ -28,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class GardenSnapshotService {
@@ -39,12 +41,13 @@ public class GardenSnapshotService {
     private final AiSuggestionRepository aiSuggestionRepository;
     private final WeatherAlertRepository weatherAlertRepository;
     private final CommunityUserRepository communityUserRepository;
-    private final FollowedUserRepository followedUserRepository;
     private final CommunityPostRepository communityPostRepository;
+    private final PostLikeRepository postLikeRepository;
     private final AchievementRepository achievementRepository;
     private final CheckinDayRepository checkinDayRepository;
     private final QWeatherService qWeatherService;
     private final GrowthDataService growthDataService;
+    private final CommunityService communityService;
 
     public GardenSnapshotService(CurrentUserService currentUserService,
                                  SpeciesRepository speciesRepository,
@@ -54,12 +57,13 @@ public class GardenSnapshotService {
                                  AiSuggestionRepository aiSuggestionRepository,
                                  WeatherAlertRepository weatherAlertRepository,
                                  CommunityUserRepository communityUserRepository,
-                                 FollowedUserRepository followedUserRepository,
                                  CommunityPostRepository communityPostRepository,
+                                 PostLikeRepository postLikeRepository,
                                  AchievementRepository achievementRepository,
                                  CheckinDayRepository checkinDayRepository,
                                  QWeatherService qWeatherService,
-                                 GrowthDataService growthDataService) {
+                                 GrowthDataService growthDataService,
+                                 CommunityService communityService) {
         this.currentUserService = currentUserService;
         this.speciesRepository = speciesRepository;
         this.plantRepository = plantRepository;
@@ -68,12 +72,13 @@ public class GardenSnapshotService {
         this.aiSuggestionRepository = aiSuggestionRepository;
         this.weatherAlertRepository = weatherAlertRepository;
         this.communityUserRepository = communityUserRepository;
-        this.followedUserRepository = followedUserRepository;
         this.communityPostRepository = communityPostRepository;
+        this.postLikeRepository = postLikeRepository;
         this.achievementRepository = achievementRepository;
         this.checkinDayRepository = checkinDayRepository;
         this.qWeatherService = qWeatherService;
         this.growthDataService = growthDataService;
+        this.communityService = communityService;
     }
 
     @Transactional(readOnly = true)
@@ -97,6 +102,9 @@ public class GardenSnapshotService {
                         fallbackAlerts
                 ));
         List<WeatherAlert> weatherAlerts = weather.alerts().isEmpty() ? fallbackAlerts : weather.alerts();
+        Set<String> likedPostIds = postLikeRepository.findByUserId(currentUserEntity.getId()).stream()
+                .map(PostLikeEntity::getPostId)
+                .collect(Collectors.toSet());
 
         return new GardenSnapshot(
                 currentUser,
@@ -108,8 +116,8 @@ public class GardenSnapshotService {
                 weather.currentWeather(),
                 weatherAlerts,
                 communityUserRepository.findAll().stream().map(GardenMapper::toDto).toList(),
-                followedUserRepository.findAll().stream().map(FollowedUserEntity::getUserId).toList(),
-                communityPostRepository.findAll().stream().sorted(Comparator.comparing(CommunityPostEntity::getTime).reversed()).map(GardenMapper::toDto).toList(),
+                communityService.followedUserIds(currentUserEntity.getId()),
+                communityPostRepository.findAll().stream().sorted(Comparator.comparing(CommunityPostEntity::getTime).reversed()).map(post -> GardenMapper.toDto(post, likedPostIds.contains(post.getId()))).toList(),
                 achievementRepository.findAll().stream().map(GardenMapper::toDto).toList(),
                 growthDataService.buildGrowthData(),
                 checkinDayRepository.findAll().stream().map(CheckinDayEntity::getDay).sorted().toList()

@@ -35,7 +35,8 @@ public final class DomainModels {
     }
 
     public record CommunityPost(String id, String type, String authorId, String author, String title, String content,
-                                String time, int likes, int comments, List<String> tags, String urgent, List<String> images) {
+                                String time, int likes, int comments, List<String> tags, String urgent, List<String> images,
+                                boolean likedByCurrentUser) {
     }
 
     public record PostComment(String id, String postId, String authorId, String author, String content, String time) {

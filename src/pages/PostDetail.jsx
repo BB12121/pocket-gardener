@@ -21,6 +21,7 @@ export default function PostDetail() {
   const [loadingComments, setLoadingComments] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [liking, setLiking] = useState(false);
+  const [following, setFollowing] = useState(false);
 
   const isMe = post?.authorId === currentUser.id;
   const isFollowed = followedUsers.includes(post?.authorId);
@@ -53,6 +54,16 @@ export default function PostDetail() {
       await likeCommunityPost(post.id);
     } finally {
       setLiking(false);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (following || !post) return;
+    setFollowing(true);
+    try {
+      await toggleUserFollow(post.authorId);
+    } finally {
+      setFollowing(false);
     }
   };
 
@@ -104,7 +115,8 @@ export default function PostDetail() {
           {!isMe && (
             <button
               className={`btn btn-sm ${isFollowed ? 'btn-default' : 'btn-primary'}`}
-              onClick={() => toggleUserFollow(post.authorId)}
+              onClick={handleFollow}
+              disabled={following}
             >
               {isFollowed ? '已关注' : '关注'}
             </button>
@@ -135,8 +147,13 @@ export default function PostDetail() {
         </div>
 
         <div className="post-detail-actions">
-          <button className="post-action large" onClick={handleLike} disabled={liking}>
-            <Icon name="heart" size={18} color="var(--red)" /> {post.likes}
+          <button
+            className={`post-action large like-action ${post.likedByCurrentUser ? 'liked' : ''} ${liking ? 'pulsing' : ''}`}
+            onClick={handleLike}
+            disabled={liking}
+            aria-pressed={Boolean(post.likedByCurrentUser)}
+          >
+            <Icon name="heart" size={18} color="currentColor" /> {post.likes}
           </button>
           <div className="post-action large as-text">
             <Icon name="comment" size={18} color="var(--text-secondary)" /> {post.comments}

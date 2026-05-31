@@ -72,6 +72,6 @@ public class GardenService {
     }
 
     public List<String> toggleFollow(String userId) {
-        return communityService.toggleFollow(userId);
+        return communityService.toggleFollow(gardenSnapshotService.currentUser(), userId);
     }
 }

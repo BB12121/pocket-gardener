@@ -14,6 +14,7 @@ export default function Community() {
   const [slideClass, setSlideClass] = useState('');
   const [slideFrom, setSlideFrom] = useState('40px');
   const [likingId, setLikingId] = useState('');
+  const [followingId, setFollowingId] = useState('');
   const prevTabIndex = useRef(1);
 
   const tabs = ['关注', '推荐', '我的'];
@@ -32,9 +33,15 @@ export default function Community() {
     setTimeout(() => setSlideClass(''), 550);
   };
 
-  const handleFollow = (event, userId) => {
+  const handleFollow = async (event, userId) => {
     event.stopPropagation();
-    toggleUserFollow(userId);
+    if (followingId) return;
+    setFollowingId(userId);
+    try {
+      await toggleUserFollow(userId);
+    } finally {
+      setFollowingId('');
+    }
   };
 
   const handleLike = async (event, postId) => {
@@ -161,13 +168,21 @@ export default function Community() {
                     <button
                       className="btn btn-sm btn-default"
                       onClick={event => handleFollow(event, post.authorId)}
+                      disabled={followingId === post.authorId}
                       style={{ fontSize: '12px', padding: '0 8px', height: '24px' }}
                     >
                       + 关注
                     </button>
                   )}
                   {!isMe && isFollowed && (
-                    <span style={{ fontSize: '12px', color: 'var(--text-placeholder)' }}>已关注</span>
+                    <button
+                      className="follow-state"
+                      onClick={event => handleFollow(event, post.authorId)}
+                      disabled={followingId === post.authorId}
+                      aria-pressed="true"
+                    >
+                      已关注
+                    </button>
                   )}
                 </div>
                 <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>{post.title}</div>
@@ -190,8 +205,13 @@ export default function Community() {
                   {post.type === '求助' && <span className="tag tag-red">求助</span>}
                 </div>
                 <div className="flex gap-12" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '0.5px solid var(--divider)' }}>
-                  <button className="post-action" onClick={event => handleLike(event, post.id)} disabled={likingId === post.id}>
-                    <Icon name="heart" size={14} color="var(--red)" /> {post.likes}
+                  <button
+                    className={`post-action like-action ${post.likedByCurrentUser ? 'liked' : ''} ${likingId === post.id ? 'pulsing' : ''}`}
+                    onClick={event => handleLike(event, post.id)}
+                    disabled={likingId === post.id}
+                    aria-pressed={Boolean(post.likedByCurrentUser)}
+                  >
+                    <Icon name="heart" size={14} color="currentColor" /> {post.likes}
                   </button>
                   <span className="flex-center gap-8" style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                     <Icon name="comment" size={14} color="var(--text-secondary)" /> {post.comments}

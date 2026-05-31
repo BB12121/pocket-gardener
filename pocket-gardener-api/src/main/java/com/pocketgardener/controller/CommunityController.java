@@ -35,13 +35,15 @@ public class CommunityController {
     }
 
     @PostMapping("/posts/{postId}/like")
-    public CommunityPost likePost(@PathVariable String postId) {
-        return communityService.likePost(postId);
+    public CommunityPost likePost(@RequestAttribute("currentUser") UserEntity currentUser,
+                                  @PathVariable String postId) {
+        return communityService.toggleLike(currentUser, postId);
     }
 
     @GetMapping("/posts/{postId}/comments")
-    public CommunityPostCommentsResponse postComments(@PathVariable String postId) {
-        return communityService.postComments(postId);
+    public CommunityPostCommentsResponse postComments(@RequestAttribute("currentUser") UserEntity currentUser,
+                                                      @PathVariable String postId) {
+        return communityService.postComments(currentUser, postId);
     }
 
     @PostMapping("/posts/{postId}/comments")
@@ -52,7 +54,8 @@ public class CommunityController {
     }
 
     @PostMapping("/community-users/{userId}/follow")
-    public List<String> toggleFollow(@PathVariable String userId) {
-        return communityService.toggleFollow(userId);
+    public List<String> toggleFollow(@RequestAttribute("currentUser") UserEntity currentUser,
+                                     @PathVariable String userId) {
+        return communityService.toggleFollow(currentUser, userId);
     }
 }

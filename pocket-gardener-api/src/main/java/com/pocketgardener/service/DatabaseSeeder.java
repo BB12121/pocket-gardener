@@ -20,6 +20,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final WeatherAlertRepository weatherAlertRepository;
     private final CommunityUserRepository communityUserRepository;
     private final FollowedUserRepository followedUserRepository;
+    private final CommunityFollowRepository communityFollowRepository;
     private final CommunityPostRepository communityPostRepository;
     private final AchievementRepository achievementRepository;
     private final CheckinDayRepository checkinDayRepository;
@@ -29,6 +30,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                           CareLogRepository careLogRepository, CareTaskRepository careTaskRepository,
                           AiSuggestionRepository aiSuggestionRepository, WeatherAlertRepository weatherAlertRepository,
                           CommunityUserRepository communityUserRepository, FollowedUserRepository followedUserRepository,
+                          CommunityFollowRepository communityFollowRepository,
                           CommunityPostRepository communityPostRepository, AchievementRepository achievementRepository,
                           CheckinDayRepository checkinDayRepository, PlantGrowthPointRepository plantGrowthPointRepository) {
         this.userRepository = userRepository;
@@ -40,6 +42,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         this.weatherAlertRepository = weatherAlertRepository;
         this.communityUserRepository = communityUserRepository;
         this.followedUserRepository = followedUserRepository;
+        this.communityFollowRepository = communityFollowRepository;
         this.communityPostRepository = communityPostRepository;
         this.achievementRepository = achievementRepository;
         this.checkinDayRepository = checkinDayRepository;
@@ -101,6 +104,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 new CommunityUserEntity("cu3", "多肉控", "阳台多肉花园主理人", "深圳", 256, 60)
         ));
         followedUserRepository.saveAll(List.of(new FollowedUserEntity("cu1"), new FollowedUserEntity("cu3")));
+        communityFollowRepository.saveAll(List.of(new CommunityFollowEntity("u1", "cu1"), new CommunityFollowEntity("u1", "cu3")));
         communityPostRepository.saveAll(List.of(
                 new CommunityPostEntity("c1", "经验", "cu1", "花花世界", "绿萝爆盆秘诀分享", "坚持每周施薄肥，保持散射光，3个月从一盆变三盆！", "2026-05-05", 42, 8, List.of("绿萝", "施肥"), null, List.of("/images/posts/lvluo.jpg")),
                 new CommunityPostEntity("c2", "求助", "cu2", "新手小白", "栀子花叶子发黄怎么办？", "买回来一周就开始黄叶，浇水也正常，求大神帮忙看看", "2026-05-06", 5, 12, List.of("栀子花", "黄叶"), "中", List.of("/images/posts/zhizi.jpg")),

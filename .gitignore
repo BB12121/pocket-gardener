@@ -33,3 +33,10 @@ dist-ssr
 # Local debugging screenshots
 android-screen.png
 android-after-login.png
+run-logs/
+api-*.log
+api-*.err.log
+vite-*.log
+vite-*.err.log
+vite.out.log
+vite.err.log

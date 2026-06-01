@@ -7,10 +7,10 @@
 - 用户管理：注册、登录、登录态校验，业务接口使用 Bearer Token 鉴权。
 - 植物管理：新增植物、查看植物详情、生长曲线和养护记录。
 - 养护任务：创建任务、完成任务、延后任务、忽略任务，支持前端左滑操作。
-- 养护日志：记录浇水、施肥、修剪、换盆等行为，并同步更新打卡热力图。
+- 养护日志：记录浇水、施肥、修剪、换盆等行为，支持添加照片，并同步更新打卡热力图。
 - 天气提醒：接入和风天气接口，根据实时天气和预警信息辅助养护决策。
 - AI 能力：接入 OpenAI 兼容接口，生成养护建议，并支持图片识别植物。
-- 社区模块：发帖、点赞、关注用户、查看推荐和关注动态。
+- 社区模块：发帖、图片附件、帖子详情、评论、点赞状态切换、关注用户、查看推荐和关注动态。
 - 个人中心：统计植物数量、连续打卡、成就和活跃记录。
 
 ## 技术栈
@@ -23,6 +23,14 @@
 | 测试 | ESLint, Vite Build, Node Test, JUnit, MockMvc, H2 |
 | 外部服务 | QWeather, OpenAI-compatible AI API |
 
+## 当前进展
+
+- 前端已完成移动端风格的主要页面：花园首页、植物详情、任务、天气、AI 建议、社区和个人中心。
+- 后端已接入 Spring Boot REST API，包含用户认证、植物、日志、任务、社区、天气和 AI 相关接口。
+- 数据库使用 Flyway 管理结构迁移，当前已包含社区互动、评论、养护记录图片等迁移脚本。
+- Android 版本已接入 Capacitor，可生成 debug APK 用于真机安装测试。
+- 图片能力当前采用前端压缩后的 Data URL 存储方式，适合课程演示和本地真机测试；后续正式部署可替换为对象存储。
+
 ## 项目结构
 
 ```text
@@ -32,11 +40,13 @@ pocket-gardener/
 │   ├── context/                 # 前端状态管理
 │   ├── pages/                   # 页面
 │   ├── services/                # API 调用封装
-│   └── utils/                   # 日期等工具函数
+│   └── utils/                   # 日期、图片处理等工具函数
 ├── pocket-gardener-api/         # Spring Boot 后端
 │   ├── src/main/java/           # 后端业务代码
 │   ├── src/main/resources/      # 配置与 Flyway 迁移脚本
 │   └── src/test/                # 后端测试
+├── android/                     # Capacitor Android 工程
+├── docs/                        # 项目开发记录与课程文档
 └── README.md
 ```
 
@@ -65,7 +75,7 @@ $env:QWEATHER_LOCATION="101210101"
 $env:QWEATHER_CITY="杭州"
 $env:AI_BASE_URL="你的 AI API Base URL"
 $env:AI_API_KEY="你的 AI API Key"
-$env:AI_MODEL="gpt-5.4-mini"
+$env:AI_MODEL="gpt-5.4"
 ```
 
 如果只是演示页面，也可以使用 H2 文件数据库启动：
@@ -91,7 +101,14 @@ npm install
 npm run dev
 ```
 
-前端默认运行在 `http://localhost:5173`。前端默认请求 `http://localhost:8080/api`，后端不可用时会使用内置演示数据兜底。
+前端默认运行在 `http://localhost:5173`。网页端默认请求 `http://localhost:8080/api`，后端不可用时会使用内置演示数据兜底。
+
+如果需要指定接口地址，可在启动或打包前设置：
+
+```powershell
+$env:VITE_API_BASE="http://你的后端地址:8080/api"
+npm run dev
+```
 
 ## Android 调试包
 
@@ -119,6 +136,17 @@ android/app/build/outputs/apk/debug/app-debug.apk
 
 Android 模拟器访问电脑本机后端时使用 `http://10.0.2.2:8081/api`。运行手机端调试包前，请确保 MySQL 已启动、后端已运行在 `8081`，并且后端环境变量只保存在本机或部署平台。
 
+真机安装 APK 时不能使用 `localhost` 访问电脑后端，需要把前端 API 地址打包为电脑在当前局域网中的 IP，例如：
+
+```powershell
+$env:VITE_API_BASE="http://10.29.91.238:8080/api"
+npm run android:sync
+cd android
+.\gradlew.bat assembleDebug
+```
+
+如果电脑切换 WiFi、局域网 IP 变化，或者后端端口变化，需要重新设置 `VITE_API_BASE` 并重新打包 APK。
+
 ## 演示账号
 
 | 用户名 | 密码 |
@@ -140,6 +168,9 @@ Android 模拟器访问电脑本机后端时使用 `http://10.0.2.2:8081/api`。
 | POST | `/api/ai/{plantId}/generate` | 生成 AI 养护建议 |
 | POST | `/api/vision/plant` | 图片识别植物 |
 | POST | `/api/posts` | 发布社区帖子 |
+| GET | `/api/posts/{postId}/comments` | 获取帖子评论 |
+| POST | `/api/posts/{postId}/comments` | 发表评论 |
+| POST | `/api/posts/{postId}/like` | 点赞或取消点赞 |
 | POST | `/api/community-users/{userId}/follow` | 关注或取消关注用户 |
 
 除登录和注册外，业务接口需要携带：
@@ -152,6 +183,7 @@ Authorization: Bearer <token>
 
 - 外部服务密钥只在后端读取环境变量，前端不保存密钥。
 - 仓库忽略 `target/`、日志文件和本地数据库文件。
+- Android debug APK、`dist/`、本地 H2 数据库和本地运行日志不应提交到仓库。
 - 提交前应执行密钥扫描，避免把 `QWEATHER_API_KEY`、`AI_API_KEY` 等真实值写入 Git。
 
 ## 常用命令

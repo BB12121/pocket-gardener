@@ -32,7 +32,8 @@ public final class GardenDtos {
                                      String location, List<String> tags) {
     }
 
-    public record CreateLogRequest(@NotBlank String plantId, @NotBlank String type, String note, String status) {
+    public record CreateLogRequest(@NotBlank String plantId, @NotBlank String type, String note, String status,
+                                   List<String> images) {
     }
 
     public record CreateTaskRequest(@NotBlank String plantId, @NotBlank String type,
@@ -49,7 +50,7 @@ public final class GardenDtos {
     }
 
     public record CreatePostRequest(@NotBlank String type, @NotBlank String title,
-                                    @NotBlank String content, List<String> tags) {
+                                    @NotBlank String content, List<String> tags, List<String> images) {
     }
 
     public record CreateCommentRequest(@NotBlank String content) {

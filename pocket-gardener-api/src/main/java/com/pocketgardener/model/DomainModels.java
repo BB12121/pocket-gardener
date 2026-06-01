@@ -16,7 +16,8 @@ public final class DomainModels {
                         String location, String status, List<String> tags, String image) {
     }
 
-    public record CareLog(String id, String plantId, String type, String time, String note, String status) {
+    public record CareLog(String id, String plantId, String type, String time, String note, String status,
+                          List<String> images) {
     }
 
     public record CareTask(String id, String plantId, String type, String planTime, String priority, String status, String source) {

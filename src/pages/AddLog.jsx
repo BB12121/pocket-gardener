@@ -1,26 +1,57 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Icon from '../components/Icon';
 import { useGardenData } from '../context/useGardenData';
+import { MAX_IMAGE_ATTACHMENTS, readImageAttachments } from '../utils/imageFiles';
 
 export default function AddLog() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const { plants, addLog, refresh } = useGardenData();
   const plant = plants.find(p => p.id === id);
   const [logType, setLogType] = useState('浇水');
   const [note, setNote] = useState('');
   const [status, setStatus] = useState('正常');
+  const [images, setImages] = useState([]);
+  const [photoError, setPhotoError] = useState('');
+  const [processingImages, setProcessingImages] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const logTypes = ['浇水', '施肥', '修剪', '换盆', '病虫害', '其他'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await addLog({ plantId: id, type: logType, note, status });
+    await addLog({ plantId: id, type: logType, note, status, images });
     await refresh();
     setSubmitted(true);
     setTimeout(() => navigate(-1), 1500);
+  };
+
+  const handleImageSelected = async (event) => {
+    const fileList = event.target.files;
+    if (!fileList?.length) return;
+    setPhotoError('');
+    setProcessingImages(true);
+    try {
+      const result = await readImageAttachments(fileList, images);
+      setImages(prev => [...prev, ...result.images].slice(0, MAX_IMAGE_ATTACHMENTS));
+      if (result.hasRejectedType) {
+        setPhotoError('已忽略非图片文件');
+      } else if (result.hasRejectedLimit) {
+        setPhotoError(`最多添加 ${MAX_IMAGE_ATTACHMENTS} 张照片`);
+      }
+    } catch (error) {
+      setPhotoError(error.message || '照片处理失败，请换一张图片重试');
+    } finally {
+      setProcessingImages(false);
+      event.target.value = '';
+    }
+  };
+
+  const removeImage = (index) => {
+    setImages(prev => prev.filter((_, itemIndex) => itemIndex !== index));
+    setPhotoError('');
   };
 
   if (!plant) return <div className="page"><div className="empty">植物不存在</div></div>;
@@ -42,6 +73,15 @@ export default function AddLog() {
         </div>
       ) : (
         <form onSubmit={handleSubmit}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImageSelected}
+            style={{ display: 'none' }}
+          />
+
           <div className="section">
             <div className="cell">
               <div className="cell-content">
@@ -95,17 +135,47 @@ export default function AddLog() {
           </div>
 
           <div className="section" style={{ padding: '16px' }}>
-            <div style={{
-              border: '0.5px dashed var(--border)', borderRadius: '4px',
-              padding: '24px', textAlign: 'center', color: 'var(--text-placeholder)'
-            }}>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={processingImages || images.length >= MAX_IMAGE_ATTACHMENTS}
+              style={{
+                width: '100%',
+                border: '0.5px dashed var(--border)',
+                borderRadius: '6px',
+                padding: '22px',
+                textAlign: 'center',
+                color: 'var(--text-placeholder)',
+                background: '#fbfbfc',
+                font: 'inherit',
+                cursor: images.length >= MAX_IMAGE_ATTACHMENTS ? 'default' : 'pointer',
+              }}
+            >
               <Icon name="camera" size={24} color="var(--text-placeholder)" />
-              <div style={{ fontSize: '13px', marginTop: '4px' }}>添加照片</div>
-            </div>
+              <div style={{ fontSize: '13px', marginTop: '4px' }}>
+                {processingImages ? '正在处理照片...' : images.length >= MAX_IMAGE_ATTACHMENTS ? '照片已达上限' : '添加照片'}
+              </div>
+              <div style={{ fontSize: '11px', marginTop: '2px' }}>最多 {MAX_IMAGE_ATTACHMENTS} 张</div>
+            </button>
+            {images.length > 0 && (
+              <div className="image-attachment-grid">
+                {images.map((image, index) => (
+                  <div className="image-attachment" key={`${image.slice(0, 32)}-${index}`}>
+                    <img src={image} alt={`养护照片 ${index + 1}`} />
+                    <button type="button" onClick={() => removeImage(index)} aria-label="移除照片">
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {photoError && <div className="form-hint error">{photoError}</div>}
           </div>
 
           <div style={{ padding: '16px' }}>
-            <button type="submit" className="btn btn-primary btn-block">确认记录</button>
+            <button type="submit" className="btn btn-primary btn-block" disabled={processingImages}>
+              确认记录
+            </button>
           </div>
         </form>
       )}

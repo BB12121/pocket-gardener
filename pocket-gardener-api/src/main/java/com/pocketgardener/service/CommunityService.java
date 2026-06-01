@@ -58,7 +58,7 @@ public class CommunityService {
                 0,
                 request.tags() == null ? List.of() : request.tags(),
                 "求助".equals(request.type()) ? "中" : null,
-                List.of()
+                safeImages(request.images())
         );
         return GardenMapper.toDto(communityPostRepository.save(post), false);
     }
@@ -135,5 +135,15 @@ public class CommunityService {
                         .map(GardenMapper::toDto)
                         .toList()
         );
+    }
+
+    private List<String> safeImages(List<String> images) {
+        if (images == null) {
+            return List.of();
+        }
+        return images.stream()
+                .filter(image -> image != null && !image.isBlank())
+                .limit(3)
+                .toList();
     }
 }

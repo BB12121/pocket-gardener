@@ -76,6 +76,27 @@ class ApiSmokeTest {
                 .andExpect(jsonPath("$.type").value("浇水"))
                 .andExpect(jsonPath("$.note").value("盆土偏干"));
     }
+
+    @Test
+    void careLogCanStoreImages() throws Exception {
+        mockMvc.perform(post("/api/logs")
+                        .header("Authorization", "Bearer " + demoToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"plantId\":\"p1\",\"type\":\"修剪\",\"note\":\"剪掉黄叶\",\"status\":\"正常\",\"images\":[\"data:image/jpeg;base64,abc\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.images[0]").value("data:image/jpeg;base64,abc"));
+    }
+
+    @Test
+    void communityPostCanStoreImages() throws Exception {
+        mockMvc.perform(post("/api/posts")
+                        .header("Authorization", "Bearer " + demoToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"经验\",\"title\":\"晒晒今天的绿萝\",\"content\":\"叶片状态很好\",\"tags\":[\"绿萝\"],\"images\":[\"data:image/jpeg;base64,post\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.images[0]").value("data:image/jpeg;base64,post"));
+    }
+
     @Test
     void communityPostCanBeLikedAndCommented() throws Exception {
         String token = demoToken();

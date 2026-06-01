@@ -20,7 +20,7 @@ public final class GardenMapper {
     }
 
     public static CareLog toDto(CareLogEntity item) {
-        return new CareLog(item.getId(), item.getPlantId(), item.getType(), item.getTime(), item.getNote(), item.getStatus());
+        return new CareLog(item.getId(), item.getPlantId(), item.getType(), item.getTime(), item.getNote(), item.getStatus(), item.getImages());
     }
 
     public static CareTask toDto(CareTaskEntity item) {

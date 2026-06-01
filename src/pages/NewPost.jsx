@@ -1,14 +1,20 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Icon from '../components/Icon';
 import { useGardenData } from '../context/useGardenData';
+import { MAX_IMAGE_ATTACHMENTS, readImageAttachments } from '../utils/imageFiles';
 
 export default function NewPost() {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const { addPost } = useGardenData();
   const [type, setType] = useState('经验');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('');
+  const [images, setImages] = useState([]);
+  const [photoError, setPhotoError] = useState('');
+  const [processingImages, setProcessingImages] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -19,9 +25,36 @@ export default function NewPost() {
       title,
       content,
       tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
+      images,
     });
     setSubmitted(true);
     setTimeout(() => navigate(-1), 1500);
+  };
+
+  const handleImageSelected = async (event) => {
+    const fileList = event.target.files;
+    if (!fileList?.length) return;
+    setPhotoError('');
+    setProcessingImages(true);
+    try {
+      const result = await readImageAttachments(fileList, images);
+      setImages(prev => [...prev, ...result.images].slice(0, MAX_IMAGE_ATTACHMENTS));
+      if (result.hasRejectedType) {
+        setPhotoError('已忽略非图片文件');
+      } else if (result.hasRejectedLimit) {
+        setPhotoError(`最多添加 ${MAX_IMAGE_ATTACHMENTS} 张图片`);
+      }
+    } catch (error) {
+      setPhotoError(error.message || '图片处理失败，请换一张图片重试');
+    } finally {
+      setProcessingImages(false);
+      event.target.value = '';
+    }
+  };
+
+  const removeImage = (index) => {
+    setImages(prev => prev.filter((_, itemIndex) => itemIndex !== index));
+    setPhotoError('');
   };
 
   if (submitted) {
@@ -49,6 +82,15 @@ export default function NewPost() {
       </div>
 
       <form onSubmit={handleSubmit}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleImageSelected}
+          style={{ display: 'none' }}
+        />
+
         <div className="section">
           <div className="form-group">
             <div className="form-item">
@@ -96,8 +138,37 @@ export default function NewPost() {
           </div>
         </div>
 
+        <div className="section" style={{ padding: '16px' }}>
+          <div className="flex-between" style={{ marginBottom: '10px' }}>
+            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>帖子图片</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-placeholder)' }}>{images.length}/{MAX_IMAGE_ATTACHMENTS}</span>
+          </div>
+          <button
+            type="button"
+            className="image-upload-tile"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={processingImages || images.length >= MAX_IMAGE_ATTACHMENTS}
+          >
+            <Icon name="camera" size={22} color="var(--text-placeholder)" />
+            <span>{processingImages ? '正在处理图片...' : images.length >= MAX_IMAGE_ATTACHMENTS ? '图片已达上限' : '添加图片'}</span>
+          </button>
+          {images.length > 0 && (
+            <div className="image-attachment-grid">
+              {images.map((image, index) => (
+                <div className="image-attachment" key={`${image.slice(0, 32)}-${index}`}>
+                  <img src={image} alt={`帖子图片 ${index + 1}`} />
+                  <button type="button" onClick={() => removeImage(index)} aria-label="移除图片">
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {photoError && <div className="form-hint error">{photoError}</div>}
+        </div>
+
         <div style={{ padding: '16px' }}>
-          <button type="submit" className="btn btn-primary btn-block">发布</button>
+          <button type="submit" className="btn btn-primary btn-block" disabled={processingImages}>发布</button>
         </div>
       </form>
     </div>

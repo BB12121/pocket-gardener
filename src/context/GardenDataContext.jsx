@@ -104,6 +104,7 @@ export function GardenDataProvider({ children }) {
             time: localDateTimeString(),
             note: payload.note || '无备注',
             status: payload.status || '正常',
+            images: payload.images ?? [],
           };
       setData(prev => ({
         ...prev,
@@ -163,7 +164,7 @@ export function GardenDataProvider({ children }) {
             likes: 0,
             comments: 0,
             urgent: payload.type === '求助' ? '中' : null,
-            images: [],
+            images: payload.images ?? [],
           };
       setData(prev => ({ ...prev, communityPosts: [created, ...prev.communityPosts] }));
       return created;

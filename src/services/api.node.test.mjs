@@ -103,3 +103,19 @@ test('community interaction helpers call the post interaction endpoints', async 
   assert.equal(calls[1].options.method, 'POST');
   assert.equal(calls[1].options.body, JSON.stringify({ content: '这条经验很有帮助' }));
 });
+
+test('image attachment picker accepts only images up to the attachment limit', async () => {
+  const { pickImageFiles } = await import(`../utils/imageFiles.js#${Date.now()}`);
+  const files = [
+    { name: 'one.jpg', type: 'image/jpeg' },
+    { name: 'two.png', type: 'image/png' },
+    { name: 'notes.txt', type: 'text/plain' },
+    { name: 'three.webp', type: 'image/webp' },
+  ];
+
+  const result = pickImageFiles(files, 1);
+
+  assert.deepEqual(result.accepted.map(file => file.name), ['one.jpg', 'two.png']);
+  assert.equal(result.hasRejectedType, true);
+  assert.equal(result.hasRejectedLimit, true);
+});

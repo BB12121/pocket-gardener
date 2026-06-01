@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 public class CareLogService {
@@ -42,7 +43,8 @@ public class CareLogService {
                 request.type(),
                 LocalDateTime.now().format(DATE_TIME),
                 blankToDefault(request.note(), "无备注"),
-                blankToDefault(request.status(), "正常")
+                blankToDefault(request.status(), "正常"),
+                safeImages(request.images())
         );
         String today = LocalDate.now().toString();
         if (!checkinDayRepository.existsById(today)) {
@@ -53,5 +55,15 @@ public class CareLogService {
 
     private String blankToDefault(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private List<String> safeImages(List<String> images) {
+        if (images == null) {
+            return List.of();
+        }
+        return images.stream()
+                .filter(image -> image != null && !image.isBlank())
+                .limit(3)
+                .toList();
     }
 }

@@ -36,6 +36,15 @@ export default function PlantDetail() {
   const currentChart = chartOptions.find(c => c.key === chartType);
   const currentData = growthData[chartType] || [];
   const hasGrowthData = currentData.length >= 2;
+  const renderLogImages = (log) => (
+    log.images?.length > 0 && (
+      <div className="log-image-strip">
+        {log.images.map((image, index) => (
+          <img key={`${log.id}-${index}`} src={image} alt={`${log.type}照片 ${index + 1}`} />
+        ))}
+      </div>
+    )
+  );
 
   return (
     <div className="page">
@@ -141,6 +150,7 @@ export default function PlantDetail() {
                 <div className="cell-content">
                   <div className="cell-title">{log.type}</div>
                   <div className="cell-desc">{log.note}</div>
+                  {renderLogImages(log)}
                 </div>
                 <span style={{ fontSize: '12px', color: 'var(--text-placeholder)', whiteSpace: 'nowrap' }}>
                   {log.time.split(' ')[1]}
@@ -164,6 +174,7 @@ export default function PlantDetail() {
                 <div className="cell-content">
                   <div className="cell-title">{log.type}</div>
                   <div className="cell-desc">{log.note}</div>
+                  {renderLogImages(log)}
                 </div>
                 <span style={{ fontSize: '12px', color: 'var(--text-placeholder)', whiteSpace: 'nowrap' }}>
                   {log.time.slice(5)}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/useAuth';
 
 export default function Auth() {
-  const { login, register } = useAuth();
+  const { login, register, enterDemoMode, demoMode } = useAuth();
   const [mode, setMode] = useState('login');
   const [loginName, setLoginName] = useState('demo');
   const [password, setPassword] = useState('123456');
@@ -90,9 +90,24 @@ export default function Auth() {
           {submitting ? '处理中...' : isRegister ? '创建账号' : '进入花园'}
         </button>
 
+        <button
+          type="button"
+          className="btn btn-default btn-block"
+          onClick={enterDemoMode}
+          style={{ marginTop: '10px' }}
+        >
+          进入演示模式
+        </button>
+
         {!isRegister && (
           <div className="auth-demo">
-            演示账号 demo，密码 123456
+            演示账号 demo，密码 123456 · 也可以直接进入演示模式
+          </div>
+        )}
+
+        {demoMode && (
+          <div className="auth-demo" style={{ marginTop: '8px', color: 'var(--green)' }}>
+            当前处于演示模式
           </div>
         )}
       </form>

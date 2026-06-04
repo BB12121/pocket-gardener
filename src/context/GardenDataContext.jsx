@@ -18,13 +18,15 @@ import { useAuth } from './useAuth';
 import { localDateString, localDateTimeString } from '../utils/date';
 
 export function GardenDataProvider({ children }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, demoMode } = useAuth();
   const [data, setData] = useState(() => mockSnapshot());
   const [loading, setLoading] = useState(false);
   const [apiOnline, setApiOnline] = useState(false);
+  const canUseApi = isAuthenticated && !demoMode;
 
   const refresh = useCallback(async () => {
-    if (!isAuthenticated) {
+    if (!canUseApi) {
+      setData(mockSnapshot());
       setApiOnline(false);
       return;
     }
@@ -39,12 +41,10 @@ export function GardenDataProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [canUseApi]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      return undefined;
-    }
+    if (!canUseApi) return undefined;
     let active = true;
     async function load() {
       try {
@@ -64,7 +64,18 @@ export function GardenDataProvider({ children }) {
     return () => {
       active = false;
     };
-  }, [isAuthenticated]);
+  }, [canUseApi]);
+
+  useEffect(() => {
+    const handleModeChange = () => {
+      if (!canUseApi) {
+        setData(mockSnapshot());
+        setApiOnline(false);
+      }
+    };
+    window.addEventListener('pocket-gardener-auth-state-change', handleModeChange);
+    return () => window.removeEventListener('pocket-gardener-auth-state-change', handleModeChange);
+  }, [canUseApi]);
 
   const replaceTask = (task) => {
     setData(prev => ({
@@ -79,7 +90,7 @@ export function GardenDataProvider({ children }) {
     apiOnline,
     refresh,
     async addPlant(payload) {
-      const created = apiOnline
+      const created = canUseApi
         ? await createPlant(payload)
         : {
             id: `p${Date.now()}`,
@@ -96,7 +107,7 @@ export function GardenDataProvider({ children }) {
       return created;
     },
     async addLog(payload) {
-      const created = apiOnline
+      const created = canUseApi
         ? await createLog(payload)
         : {
             id: `l${Date.now()}`,
@@ -116,7 +127,7 @@ export function GardenDataProvider({ children }) {
       return created;
     },
     async addTask(payload) {
-      const created = apiOnline
+      const created = canUseApi
         ? await createTask(payload)
         : {
             id: `t${Date.now()}`,
@@ -130,7 +141,7 @@ export function GardenDataProvider({ children }) {
     },
     async setTaskStatus(taskId, status) {
       const current = data.careTasks.find(task => task.id === taskId);
-      const updated = apiOnline
+      const updated = canUseApi
         ? await updateTaskStatus(taskId, status)
         : { ...current, status };
       replaceTask(updated);
@@ -138,7 +149,7 @@ export function GardenDataProvider({ children }) {
     },
     async addSuggestion(plantId) {
       const plant = data.plants.find(item => item.id === plantId);
-      const suggestion = apiOnline
+      const suggestion = canUseApi
         ? await generateSuggestion(plantId)
         : {
             id: `a${Date.now()}`,
@@ -153,7 +164,7 @@ export function GardenDataProvider({ children }) {
       return suggestion;
     },
     async addPost(payload) {
-      const created = apiOnline
+      const created = canUseApi
         ? await createPost(payload)
         : {
             id: `c${Date.now()}`,
@@ -171,7 +182,7 @@ export function GardenDataProvider({ children }) {
     },
     async likeCommunityPost(postId) {
       const current = data.communityPosts.find(post => post.id === postId);
-      const updated = apiOnline
+      const updated = canUseApi
         ? await likePost(postId)
         : {
             ...current,
@@ -185,14 +196,14 @@ export function GardenDataProvider({ children }) {
       return updated;
     },
     async getPostComments(postId) {
-      if (apiOnline) {
+      if (canUseApi) {
         return fetchPostComments(postId);
       }
       const post = data.communityPosts.find(item => item.id === postId);
       return { post, comments: [] };
     },
     async commentOnPost(postId, content) {
-      if (apiOnline) {
+      if (canUseApi) {
         const result = await addPostComment(postId, content);
         setData(prev => ({
           ...prev,
@@ -217,7 +228,7 @@ export function GardenDataProvider({ children }) {
       return { post: updated, comments: [comment] };
     },
     async toggleUserFollow(userId) {
-      const followedUsers = apiOnline
+      const followedUsers = canUseApi
         ? await toggleFollow(userId)
         : data.followedUsers.includes(userId)
           ? data.followedUsers.filter(id => id !== userId)
@@ -225,7 +236,7 @@ export function GardenDataProvider({ children }) {
       setData(prev => ({ ...prev, followedUsers }));
       return followedUsers;
     },
-  }), [apiOnline, data, loading, refresh]);
+  }), [apiOnline, canUseApi, data, loading, refresh]);
 
   return (
     <GardenDataContext.Provider value={value}>

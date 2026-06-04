@@ -1,5 +1,6 @@
 package com.pocketgardener;
 
+import com.pocketgardener.repository.PlantGrowthPointRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -9,6 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -21,6 +23,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ApiSmokeTest {
     @Autowired
     private MockMvc mockMvc;
+    @Autowired
+    private PlantGrowthPointRepository plantGrowthPointRepository;
 
     private String demoToken() throws Exception {
         return mockMvc.perform(post("/api/auth/login")
@@ -85,6 +89,23 @@ class ApiSmokeTest {
                         .content("{\"plantId\":\"p1\",\"type\":\"修剪\",\"note\":\"剪掉黄叶\",\"status\":\"正常\",\"images\":[\"data:image/jpeg;base64,abc\"]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.images[0]").value("data:image/jpeg;base64,abc"));
+    }
+
+    @Test
+    void careLogCanAppendGrowthDataPoints() throws Exception {
+        mockMvc.perform(post("/api/logs")
+                        .header("Authorization", "Bearer " + demoToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"plantId\":\"p1\",\"type\":\"观察\",\"note\":\"新增测量\",\"status\":\"生长旺盛\",\"height\":43.5,\"leaves\":31,\"health\":96}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plantId").value("p1"));
+
+        assertTrue(plantGrowthPointRepository.findByPlantId("p1").stream()
+                .anyMatch(point -> "height".equals(point.getMetric()) && point.getValue() == 43.5));
+        assertTrue(plantGrowthPointRepository.findByPlantId("p1").stream()
+                .anyMatch(point -> "leaves".equals(point.getMetric()) && point.getValue() == 31.0));
+        assertTrue(plantGrowthPointRepository.findByPlantId("p1").stream()
+                .anyMatch(point -> "health".equals(point.getMetric()) && point.getValue() == 96.0));
     }
 
     @Test

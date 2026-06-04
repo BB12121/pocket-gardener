@@ -23,25 +23,29 @@ public class CareLogService {
     private final PlantLookupService plantLookupService;
     private final CareLogRepository careLogRepository;
     private final CheckinDayRepository checkinDayRepository;
+    private final GrowthDataService growthDataService;
 
     public CareLogService(BusinessIdGenerator idGenerator,
                           PlantLookupService plantLookupService,
                           CareLogRepository careLogRepository,
-                          CheckinDayRepository checkinDayRepository) {
+                          CheckinDayRepository checkinDayRepository,
+                          GrowthDataService growthDataService) {
         this.idGenerator = idGenerator;
         this.plantLookupService = plantLookupService;
         this.careLogRepository = careLogRepository;
         this.checkinDayRepository = checkinDayRepository;
+        this.growthDataService = growthDataService;
     }
 
     @Transactional
     public CareLog createLog(CreateLogRequest request) {
         plantLookupService.requirePlant(request.plantId());
+        String logTime = LocalDateTime.now().format(DATE_TIME);
         CareLogEntity log = new CareLogEntity(
                 idGenerator.nextId("l"),
                 request.plantId(),
                 request.type(),
-                LocalDateTime.now().format(DATE_TIME),
+                logTime,
                 blankToDefault(request.note(), "无备注"),
                 blankToDefault(request.status(), "正常"),
                 safeImages(request.images())
@@ -50,6 +54,7 @@ public class CareLogService {
         if (!checkinDayRepository.existsById(today)) {
             checkinDayRepository.save(new CheckinDayEntity(today));
         }
+        growthDataService.appendGrowthPoints(request.plantId(), logTime.substring(0, 10), request.height(), request.leaves(), request.health());
         return GardenMapper.toDto(careLogRepository.save(log));
     }
 

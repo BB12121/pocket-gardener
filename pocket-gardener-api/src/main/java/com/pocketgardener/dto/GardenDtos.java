@@ -33,7 +33,7 @@ public final class GardenDtos {
     }
 
     public record CreateLogRequest(@NotBlank String plantId, @NotBlank String type, String note, String status,
-                                   List<String> images) {
+                                   List<String> images, Double height, Double leaves, Double health) {
     }
 
     public record CreateTaskRequest(@NotBlank String plantId, @NotBlank String type,
@@ -46,7 +46,8 @@ public final class GardenDtos {
     public record IdentifyPlantRequest(@NotBlank String imageDataUrl) {
     }
 
-    public record IdentifyPlantResponse(String speciesName, double confidence, String care) {
+    public record IdentifyPlantResponse(String speciesName, double confidence, String care,
+                                        Double height, Double leaves, Double health) {
     }
 
     public record CreatePostRequest(@NotBlank String type, @NotBlank String title,

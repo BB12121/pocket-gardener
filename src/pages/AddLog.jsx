@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Icon from '../components/Icon';
 import { useGardenData } from '../context/useGardenData';
+import { identifyPlant } from '../services/api';
 import { MAX_IMAGE_ATTACHMENTS, readImageAttachments } from '../utils/imageFiles';
 
 export default function AddLog() {
@@ -13,16 +14,61 @@ export default function AddLog() {
   const [logType, setLogType] = useState('浇水');
   const [note, setNote] = useState('');
   const [status, setStatus] = useState('正常');
+  const [height, setHeight] = useState('');
+  const [leaves, setLeaves] = useState('');
+  const [health, setHealth] = useState('');
   const [images, setImages] = useState([]);
   const [photoError, setPhotoError] = useState('');
+  const [aiFillMessage, setAiFillMessage] = useState('');
   const [processingImages, setProcessingImages] = useState(false);
+  const [recognizingGrowth, setRecognizingGrowth] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const logTypes = ['浇水', '施肥', '修剪', '换盆', '病虫害', '其他'];
 
+  const optionalNumber = (value) => {
+    if (value === '') return undefined;
+    return Number(value);
+  };
+
+  const fillGrowthFromImage = async (image) => {
+    setRecognizingGrowth(true);
+    setAiFillMessage('正在根据照片识别生长数据...');
+    try {
+      const result = await identifyPlant(image);
+      let filled = 0;
+      if (typeof result.height === 'number') {
+        setHeight(String(Number(result.height.toFixed(1))));
+        filled += 1;
+      }
+      if (typeof result.leaves === 'number') {
+        setLeaves(String(Math.round(result.leaves)));
+        filled += 1;
+      }
+      if (typeof result.health === 'number') {
+        setHealth(String(Math.round(result.health)));
+        filled += 1;
+      }
+      setAiFillMessage(filled > 0 ? '已根据照片预填生长数据，可继续手动调整' : '照片已识别，但未能估算生长数据');
+    } catch (error) {
+      setAiFillMessage(error.message || '生长数据识别失败，可手动填写');
+    } finally {
+      setRecognizingGrowth(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await addLog({ plantId: id, type: logType, note, status, images });
+    await addLog({
+      plantId: id,
+      type: logType,
+      note,
+      status,
+      images,
+      height: optionalNumber(height),
+      leaves: optionalNumber(leaves),
+      health: optionalNumber(health),
+    });
     await refresh();
     setSubmitted(true);
     setTimeout(() => navigate(-1), 1500);
@@ -40,6 +86,9 @@ export default function AddLog() {
         setPhotoError('已忽略非图片文件');
       } else if (result.hasRejectedLimit) {
         setPhotoError(`最多添加 ${MAX_IMAGE_ATTACHMENTS} 张照片`);
+      }
+      if (result.images[0]) {
+        await fillGrowthFromImage(result.images[0]);
       }
     } catch (error) {
       setPhotoError(error.message || '照片处理失败，请换一张图片重试');
@@ -132,6 +181,62 @@ export default function AddLog() {
                 </select>
               </div>
             </div>
+          </div>
+
+          <div className="section">
+            <div className="section-header">
+              <span className="section-title">生长数据</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-placeholder)' }}>
+                {recognizingGrowth ? 'AI 识别中' : '选填'}
+              </span>
+            </div>
+            <div className="form-group">
+              <div className="form-item">
+                <span className="form-label">高度</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={height}
+                  onChange={e => setHeight(e.target.value)}
+                  placeholder="cm"
+                  style={{ border: 'none' }}
+                />
+              </div>
+              <div className="form-item">
+                <span className="form-label">叶片数</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={leaves}
+                  onChange={e => setLeaves(e.target.value)}
+                  placeholder="片"
+                  style={{ border: 'none' }}
+                />
+              </div>
+              <div className="form-item">
+                <span className="form-label">健康评分</span>
+                <input
+                  className="form-input"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={health}
+                  onChange={e => setHealth(e.target.value)}
+                  placeholder="0-100"
+                  style={{ border: 'none' }}
+                />
+              </div>
+            </div>
+            {aiFillMessage && (
+              <div className="form-hint" style={{ padding: '0 16px 12px' }}>
+                {aiFillMessage}
+              </div>
+            )}
           </div>
 
           <div className="section" style={{ padding: '16px' }}>

@@ -65,7 +65,7 @@ class AiClientServiceTest {
                               "choices": [
                                 {
                                   "message": {
-                                    "content": "{\\"speciesName\\":\\"龟背竹\\",\\"confidence\\":0.97,\\"care\\":\\"明亮散射光，土干再浇。\\"}"
+                                    "content": "{\\"speciesName\\":\\"龟背竹\\",\\"confidence\\":0.97,\\"care\\":\\"明亮散射光，土干再浇。\\",\\"height\\":38.5,\\"leaves\\":12,\\"health\\":91}"
                                   }
                                 }
                               ]
@@ -79,5 +79,8 @@ class AiClientServiceTest {
         assertThat(result.speciesName()).isEqualTo("龟背竹");
         assertThat(result.confidence()).isEqualTo(0.97);
         assertThat(result.care()).contains("散射光");
+        assertThat(result.height()).isEqualTo(38.5);
+        assertThat(result.leaves()).isEqualTo(12.0);
+        assertThat(result.health()).isEqualTo(91.0);
     }
 }

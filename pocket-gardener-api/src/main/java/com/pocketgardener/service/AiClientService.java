@@ -58,7 +58,14 @@ public class AiClientService {
             }
             double confidence = json.path("confidence").asDouble(0.0);
             String care = json.path("care").asText("请根据植物状态调整浇水、光照和通风。");
-            return Optional.of(new PlantIdentification(speciesName, confidence, care));
+            return Optional.of(new PlantIdentification(
+                    speciesName,
+                    confidence,
+                    care,
+                    optionalDouble(json, "height"),
+                    optionalDouble(json, "leaves"),
+                    optionalDouble(json, "health")
+            ));
         } catch (Exception exception) {
             log.warn("AI plant identification request failed: {}", exception.getMessage());
             return Optional.empty();
@@ -91,7 +98,7 @@ public class AiClientService {
         ArrayNode content = user.putArray("content");
         ObjectNode text = objectMapper.createObjectNode();
         text.put("type", "text");
-        text.put("text", "请识别图片中的植物，严格只返回JSON：{\"speciesName\":\"中文名\",\"confidence\":0到1之间的小数,\"care\":\"一句养护建议\"}");
+        text.put("text", "请识别图片中的植物，并估算可见生长数据。严格只返回JSON：{\"speciesName\":\"中文名\",\"confidence\":0到1之间的小数,\"care\":\"一句养护建议\",\"height\":高度厘米数字或null,\"leaves\":可见叶片数数字或null,\"health\":健康评分0到100数字或null}。如果图片缺少比例尺，高度可按常见盆栽尺度估算；无法判断的字段返回null。");
         content.add(text);
         ObjectNode image = objectMapper.createObjectNode();
         image.put("type", "image_url");
@@ -130,9 +137,19 @@ public class AiClientService {
         return compact.length() > 60 ? compact.substring(0, 60) + "..." : compact;
     }
 
+    private Double optionalDouble(JsonNode root, String field) {
+        JsonNode value = root.path(field);
+        if (value.isMissingNode() || value.isNull() || !value.isNumber()) {
+            return null;
+        }
+        double number = value.asDouble();
+        return Double.isFinite(number) ? number : null;
+    }
+
     public record AiAdvice(String model, String summary, String detail) {
     }
 
-    public record PlantIdentification(String speciesName, double confidence, String care) {
+    public record PlantIdentification(String speciesName, double confidence, String care,
+                                      Double height, Double leaves, Double health) {
     }
 }

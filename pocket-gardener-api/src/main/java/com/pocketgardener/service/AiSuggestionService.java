@@ -78,7 +78,10 @@ public class AiSuggestionService {
         return new IdentifyPlantResponse(
                 identification.speciesName(),
                 identification.confidence(),
-                identification.care()
+                identification.care(),
+                identification.height(),
+                identification.leaves(),
+                identification.health()
         );
     }
 

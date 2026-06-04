@@ -17,6 +17,28 @@ import { GardenDataContext } from './gardenDataContextValue';
 import { useAuth } from './useAuth';
 import { localDateString, localDateTimeString } from '../utils/date';
 
+function appendGrowthData(growthData, payload, date) {
+  const metrics = [
+    ['height', payload.height],
+    ['leaves', payload.leaves],
+    ['health', payload.health],
+  ].filter(([, value]) => typeof value === 'number' && Number.isFinite(value));
+
+  if (metrics.length === 0) {
+    return growthData;
+  }
+
+  const plantSeries = growthData[payload.plantId] ?? { height: [], leaves: [], health: [] };
+  const nextSeries = { ...plantSeries };
+  for (const [metric, value] of metrics) {
+    nextSeries[metric] = [...(nextSeries[metric] ?? []), { date, value }];
+  }
+  return {
+    ...growthData,
+    [payload.plantId]: nextSeries,
+  };
+}
+
 export function GardenDataProvider({ children }) {
   const { isAuthenticated, demoMode } = useAuth();
   const [data, setData] = useState(() => mockSnapshot());
@@ -120,6 +142,7 @@ export function GardenDataProvider({ children }) {
       setData(prev => ({
         ...prev,
         careLogs: [created, ...prev.careLogs],
+        plantGrowthData: appendGrowthData(prev.plantGrowthData, payload, created.time.split(' ')[0]),
         checkinDays: prev.checkinDays.includes(created.time.split(' ')[0])
           ? prev.checkinDays
           : [...prev.checkinDays, created.time.split(' ')[0]],

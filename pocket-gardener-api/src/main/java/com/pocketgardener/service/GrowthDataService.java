@@ -15,10 +15,19 @@ import java.util.stream.Collectors;
 
 @Service
 public class GrowthDataService {
+    private final BusinessIdGenerator idGenerator;
     private final PlantGrowthPointRepository plantGrowthPointRepository;
 
-    public GrowthDataService(PlantGrowthPointRepository plantGrowthPointRepository) {
+    public GrowthDataService(BusinessIdGenerator idGenerator, PlantGrowthPointRepository plantGrowthPointRepository) {
+        this.idGenerator = idGenerator;
         this.plantGrowthPointRepository = plantGrowthPointRepository;
+    }
+
+    @Transactional
+    public void appendGrowthPoints(String plantId, String date, Double height, Double leaves, Double health) {
+        saveMetric(plantId, date, "height", height);
+        saveMetric(plantId, date, "leaves", leaves);
+        saveMetric(plantId, date, "health", health);
     }
 
     @Transactional(readOnly = true)
@@ -42,5 +51,21 @@ public class GrowthDataService {
                 .sorted(Comparator.comparing(PlantGrowthPointEntity::getDate))
                 .map(item -> new GrowthPoint(item.getDate(), item.getValue()))
                 .toList();
+    }
+
+    private void saveMetric(String plantId, String date, String metric, Double value) {
+        if (value == null) {
+            return;
+        }
+        if (!Double.isFinite(value) || value < 0) {
+            throw new IllegalArgumentException("生长数据必须为非负数");
+        }
+        plantGrowthPointRepository.save(new PlantGrowthPointEntity(
+                idGenerator.nextId("g"),
+                plantId,
+                metric,
+                date,
+                value
+        ));
     }
 }

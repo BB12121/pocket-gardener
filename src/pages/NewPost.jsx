@@ -7,6 +7,7 @@ import { MAX_IMAGE_ATTACHMENTS, readImageAttachments } from '../utils/imageFiles
 export default function NewPost() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const { addPost } = useGardenData();
   const [type, setType] = useState('经验');
   const [title, setTitle] = useState('');
@@ -90,6 +91,14 @@ export default function NewPost() {
           onChange={handleImageSelected}
           style={{ display: 'none' }}
         />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleImageSelected}
+          style={{ display: 'none' }}
+        />
 
         <div className="section">
           <div className="form-group">
@@ -143,15 +152,26 @@ export default function NewPost() {
             <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>帖子图片</span>
             <span style={{ fontSize: '12px', color: 'var(--text-placeholder)' }}>{images.length}/{MAX_IMAGE_ATTACHMENTS}</span>
           </div>
-          <button
-            type="button"
-            className="image-upload-tile"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={processingImages || images.length >= MAX_IMAGE_ATTACHMENTS}
-          >
-            <Icon name="camera" size={22} color="var(--text-placeholder)" />
-            <span>{processingImages ? '正在处理图片...' : images.length >= MAX_IMAGE_ATTACHMENTS ? '图片已达上限' : '添加图片'}</span>
-          </button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <button
+              type="button"
+              className="image-upload-tile"
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={processingImages || images.length >= MAX_IMAGE_ATTACHMENTS}
+            >
+              <Icon name="camera" size={22} color="var(--text-placeholder)" />
+              <span>{processingImages ? '正在处理图片...' : images.length >= MAX_IMAGE_ATTACHMENTS ? '图片已达上限' : '拍照'}</span>
+            </button>
+            <button
+              type="button"
+              className="image-upload-tile"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={processingImages || images.length >= MAX_IMAGE_ATTACHMENTS}
+            >
+              <Icon name="image" size={22} color="var(--text-placeholder)" />
+              <span>{images.length >= MAX_IMAGE_ATTACHMENTS ? '图片已达上限' : '从相册选择'}</span>
+            </button>
+          </div>
           {images.length > 0 && (
             <div className="image-attachment-grid">
               {images.map((image, index) => (

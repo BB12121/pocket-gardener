@@ -123,7 +123,7 @@ export function GardenDataProvider({ children }) {
             location: payload.location || '未设置',
             status: '健康',
             tags: payload.tags ?? [],
-            image: '',
+            image: payload.image || '',
           };
       setData(prev => ({ ...prev, plants: [created, ...prev.plants] }));
       return created;

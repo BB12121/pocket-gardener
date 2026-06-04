@@ -9,6 +9,7 @@ export default function AddLog() {
   const { id } = useParams();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const { plants, addLog, refresh } = useGardenData();
   const plant = plants.find(p => p.id === id);
   const [logType, setLogType] = useState('浇水');
@@ -33,7 +34,7 @@ export default function AddLog() {
 
   const fillGrowthFromImage = async (image) => {
     setRecognizingGrowth(true);
-    setAiFillMessage('正在根据照片识别生长数据...');
+    setAiFillMessage('AI 正在根据照片识别生长数据，可能需要几十秒...');
     try {
       const result = await identifyPlant(image);
       let filled = 0;
@@ -127,6 +128,14 @@ export default function AddLog() {
             type="file"
             accept="image/*"
             multiple
+            onChange={handleImageSelected}
+            style={{ display: 'none' }}
+          />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
             onChange={handleImageSelected}
             style={{ display: 'none' }}
           />
@@ -240,28 +249,49 @@ export default function AddLog() {
           </div>
 
           <div className="section" style={{ padding: '16px' }}>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={processingImages || images.length >= MAX_IMAGE_ATTACHMENTS}
-              style={{
-                width: '100%',
-                border: '0.5px dashed var(--border)',
-                borderRadius: '6px',
-                padding: '22px',
-                textAlign: 'center',
-                color: 'var(--text-placeholder)',
-                background: '#fbfbfc',
-                font: 'inherit',
-                cursor: images.length >= MAX_IMAGE_ATTACHMENTS ? 'default' : 'pointer',
-              }}
-            >
-              <Icon name="camera" size={24} color="var(--text-placeholder)" />
-              <div style={{ fontSize: '13px', marginTop: '4px' }}>
-                {processingImages ? '正在处理照片...' : images.length >= MAX_IMAGE_ATTACHMENTS ? '照片已达上限' : '添加照片'}
-              </div>
-              <div style={{ fontSize: '11px', marginTop: '2px' }}>最多 {MAX_IMAGE_ATTACHMENTS} 张</div>
-            </button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={processingImages || images.length >= MAX_IMAGE_ATTACHMENTS}
+                style={{
+                  border: '0.5px dashed var(--border)',
+                  borderRadius: '6px',
+                  padding: '18px 12px',
+                  textAlign: 'center',
+                  color: 'var(--text-placeholder)',
+                  background: '#fbfbfc',
+                  font: 'inherit',
+                  cursor: images.length >= MAX_IMAGE_ATTACHMENTS ? 'default' : 'pointer',
+                }}
+              >
+                <Icon name="camera" size={24} color="var(--text-placeholder)" />
+                <div style={{ fontSize: '13px', marginTop: '4px' }}>
+                  {processingImages ? '正在处理照片...' : images.length >= MAX_IMAGE_ATTACHMENTS ? '照片已达上限' : '拍照'}
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={processingImages || images.length >= MAX_IMAGE_ATTACHMENTS}
+                style={{
+                  border: '0.5px dashed var(--border)',
+                  borderRadius: '6px',
+                  padding: '18px 12px',
+                  textAlign: 'center',
+                  color: 'var(--text-placeholder)',
+                  background: '#fbfbfc',
+                  font: 'inherit',
+                  cursor: images.length >= MAX_IMAGE_ATTACHMENTS ? 'default' : 'pointer',
+                }}
+              >
+                <Icon name="image" size={24} color="var(--text-placeholder)" />
+                <div style={{ fontSize: '13px', marginTop: '4px' }}>
+                  {images.length >= MAX_IMAGE_ATTACHMENTS ? '照片已达上限' : '从相册选择'}
+                </div>
+              </button>
+            </div>
+            <div className="form-hint" style={{ paddingTop: '8px' }}>最多 {MAX_IMAGE_ATTACHMENTS} 张</div>
             {images.length > 0 && (
               <div className="image-attachment-grid">
                 {images.map((image, index) => (

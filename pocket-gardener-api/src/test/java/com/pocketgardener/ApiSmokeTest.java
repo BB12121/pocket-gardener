@@ -63,10 +63,11 @@ class ApiSmokeTest {
         mockMvc.perform(post("/api/plants")
                         .header("Authorization", "Bearer " + demoToken())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nickname\":\"新绿\",\"speciesName\":\"绿萝\",\"location\":\"卧室\",\"tags\":[\"耐阴\"]}"))
+                        .content("{\"nickname\":\"avatar-plant\",\"speciesName\":\"pothos\",\"location\":\"bedroom\",\"tags\":[\"shade\"],\"image\":\"data:image/jpeg;base64,plant\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nickname").value("新绿"))
-                .andExpect(jsonPath("$.status").value("健康"));
+                .andExpect(jsonPath("$.nickname").value("avatar-plant"))
+                .andExpect(jsonPath("$.status").value("健康"))
+                .andExpect(jsonPath("$.image").value("data:image/jpeg;base64,plant"));
     }
 
     @Test

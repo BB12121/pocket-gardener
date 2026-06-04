@@ -29,7 +29,7 @@ public final class GardenDtos {
     }
 
     public record CreatePlantRequest(@NotBlank String nickname, @NotBlank String speciesName,
-                                     String location, List<String> tags) {
+                                     String location, List<String> tags, String image) {
     }
 
     public record CreateLogRequest(@NotBlank String plantId, @NotBlank String type, String note, String status,

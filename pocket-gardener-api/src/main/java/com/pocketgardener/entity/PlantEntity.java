@@ -23,6 +23,7 @@ public class PlantEntity {
     private String purchaseDate;
     private String location;
     private String status;
+    @Column(columnDefinition = "LONGTEXT")
     private String image;
 
     @ElementCollection(fetch = FetchType.EAGER)

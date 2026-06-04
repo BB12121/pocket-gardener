@@ -7,6 +7,7 @@ const BUILD_API_BASE = import.meta.env.VITE_API_BASE ?? (isNativeApp ? DEFAULT_A
 export const AUTH_TOKEN_KEY = 'pocket-gardener-token';
 export const API_BASE_STORAGE_KEY = 'pocket-gardener-api-base';
 const REQUEST_TIMEOUT_MS = 12000;
+const VISION_REQUEST_TIMEOUT_MS = 60000;
 let authToken = '';
 
 export function setAuthToken(token) {
@@ -97,19 +98,20 @@ export function resetApiBase() {
 }
 
 async function request(path, options = {}) {
+  const { timeoutMs = REQUEST_TIMEOUT_MS, ...fetchOptions } = options;
   const token = currentAuthToken();
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timeoutId = controller ? globalThis.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS) : null;
+  const timeoutId = controller ? globalThis.setTimeout(() => controller.abort(), timeoutMs) : null;
   let response;
 
   try {
     response = await fetch(`${getApiBase()}${path}`, {
-      ...options,
+      ...fetchOptions,
       signal: controller?.signal,
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options.headers ?? {}),
+        ...(fetchOptions.headers ?? {}),
       },
     });
   } catch (err) {
@@ -213,6 +215,7 @@ export async function identifyPlant(imageDataUrl) {
   return request('/vision/plant', {
     method: 'POST',
     body: JSON.stringify({ imageDataUrl }),
+    timeoutMs: VISION_REQUEST_TIMEOUT_MS,
   });
 }
 

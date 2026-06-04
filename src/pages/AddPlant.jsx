@@ -3,19 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '../components/Icon';
 import { useGardenData } from '../context/useGardenData';
 import { identifyPlant } from '../services/api';
-
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('图片读取失败'));
-    reader.readAsDataURL(file);
-  });
-}
+import { readCompressedImage } from '../utils/imageFiles';
 
 export default function AddPlant() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const avatarInputRef = useRef(null);
   const { addPlant, refresh } = useGardenData();
   const [step, setStep] = useState(1);
   const [method, setMethod] = useState(null);
@@ -51,7 +44,7 @@ export default function AddPlant() {
     setFormError('');
     setIdentifying(true);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
+      const dataUrl = await readCompressedImage(file, { maxWidth: 900, maxHeight: 900, quality: 0.76 });
       setPhotoPreview(dataUrl);
       const result = await identifyPlant(dataUrl);
       setRecognition(result);
@@ -63,6 +56,24 @@ export default function AddPlant() {
       setFormError(error.message || '植物识别失败，请换一张清晰图片后重试');
     } finally {
       setIdentifying(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleAvatarSelected = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setFormError('请选择图片文件');
+      return;
+    }
+    setFormError('');
+    try {
+      const dataUrl = await readCompressedImage(file, { maxWidth: 900, maxHeight: 900, quality: 0.76 });
+      setPhotoPreview(dataUrl);
+    } catch (error) {
+      setFormError(error.message || '图片处理失败，请换一张图片重试');
+    } finally {
       event.target.value = '';
     }
   };
@@ -106,6 +117,7 @@ export default function AddPlant() {
         speciesName: speciesName.trim(),
         location,
         tags,
+        image: photoPreview,
       });
       await refresh();
       setSubmitted(true);
@@ -148,6 +160,14 @@ export default function AddPlant() {
         accept="image/*"
         capture="environment"
         onChange={handlePhotoSelected}
+        style={{ display: 'none' }}
+      />
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleAvatarSelected}
         style={{ display: 'none' }}
       />
 
@@ -221,6 +241,34 @@ export default function AddPlant() {
               )}
               <button className="btn btn-default btn-sm" type="button" onClick={() => fileInputRef.current?.click()} style={{ marginTop: '10px' }}>
                 重新选择图片
+              </button>
+            </div>
+          )}
+          {method === 'manual' && (
+            <div style={{ padding: '16px', background: '#f9f9f9' }}>
+              {photoPreview ? (
+                <img
+                  src={photoPreview}
+                  alt="植物头像"
+                  style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' }}
+                />
+              ) : (
+                <div style={{
+                  height: '120px',
+                  border: '0.5px dashed var(--border)',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-placeholder)',
+                  background: '#fff',
+                  marginBottom: '10px',
+                }}>
+                  还没有植物头像
+                </div>
+              )}
+              <button className="btn btn-default btn-sm" type="button" onClick={() => avatarInputRef.current?.click()}>
+                上传植物头像
               </button>
             </div>
           )}

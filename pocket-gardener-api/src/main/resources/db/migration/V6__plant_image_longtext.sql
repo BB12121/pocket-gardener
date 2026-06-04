@@ -1,0 +1,1 @@
+ALTER TABLE plants MODIFY image LONGTEXT;

@@ -25,7 +25,7 @@ class PersistenceIntegrationTest {
     void createPlantPersistsThroughRepository() {
         long before = plantRepository.count();
 
-        plantProfileService.createPlant(new CreatePlantRequest("数据库绿萝", "绿萝", "书房", List.of("耐阴")));
+        plantProfileService.createPlant(new CreatePlantRequest("数据库绿萝", "绿萝", "书房", List.of("耐阴"), null));
 
         assertThat(plantRepository.count()).isEqualTo(before + 1);
         assertThat(plantRepository.findByNickname("数据库绿萝")).isPresent();

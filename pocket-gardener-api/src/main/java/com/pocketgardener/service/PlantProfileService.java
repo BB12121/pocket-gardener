@@ -48,7 +48,7 @@ public class PlantProfileService {
                 blankToDefault(request.location(), "未设置"),
                 "健康",
                 request.tags() == null ? List.of() : request.tags(),
-                ""
+                blankToDefault(request.image(), "")
         );
         return GardenMapper.toDto(plantRepository.save(plant));
     }

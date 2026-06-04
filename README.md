@@ -30,7 +30,7 @@
 - 数据库使用 Flyway 管理结构迁移，当前已包含社区互动、评论、养护记录图片等迁移脚本。
 - Android 版本已接入 Capacitor，可生成 debug APK 用于真机安装测试。
 - 图片能力当前采用前端压缩后的 Data URL 存储方式，适合课程演示和本地真机测试；后续正式部署可替换为对象存储。
-- 登录页支持“进入演示模式”，可在不启动后端的情况下直接浏览首页、植物、任务、社区和个人中心的本地演示数据。
+- 项目区分完整应用版和本地展示版：完整应用版默认不显示演示入口；展示版可在不启动后端的情况下浏览本地演示数据。
 
 ## 项目结构
 
@@ -52,6 +52,17 @@ pocket-gardener/
 ```
 
 ## 本地启动
+
+### 0. 版本说明
+
+项目提供两个前端运行/打包变体：
+
+| 版本 | 用途 | 是否需要后端 | 启动命令 |
+|---|---|---|---|
+| 完整应用版 | 正常开发、真实登录、真实数据库和 API | 需要 | `npm run dev` |
+| 本地展示版 | 课堂展示、截图、无后端预览 | 不需要 | `npm run dev:showcase` |
+
+完整应用版不会显示“进入本地展示”按钮；只有本地展示版会显示该入口。
 
 ### 1. 启动后端数据库
 
@@ -111,7 +122,13 @@ $env:VITE_API_BASE="http://你的后端地址:8080/api"
 npm run dev
 ```
 
-如果只想看前端展示效果，不启动后端也可以，直接在登录页点击“进入演示模式”即可进入本地 mock 数据界面。
+如果只想看前端展示效果，不启动后端也可以运行展示版：
+
+```powershell
+npm run dev:showcase
+```
+
+展示版登录页会出现“进入本地展示”按钮，点击后进入本地 mock 数据界面。
 
 ## Android 调试包
 
@@ -127,6 +144,14 @@ Windows PowerShell 可使用：
 
 ```powershell
 npm run android:sync
+cd android
+.\gradlew.bat assembleDebug
+```
+
+如果要打包不依赖后端的展示版 APK：
+
+```powershell
+npm run android:sync:showcase
 cd android
 .\gradlew.bat assembleDebug
 ```

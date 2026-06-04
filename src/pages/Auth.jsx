@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/useAuth';
 
 export default function Auth() {
-  const { login, register, enterDemoMode, demoMode } = useAuth();
+  const { login, register, enterDemoMode, showcaseMode } = useAuth();
   const [mode, setMode] = useState('login');
   const [loginName, setLoginName] = useState('demo');
   const [password, setPassword] = useState('123456');
@@ -12,6 +12,32 @@ export default function Auth() {
   const [submitting, setSubmitting] = useState(false);
 
   const isRegister = mode === 'register';
+
+  if (showcaseMode) {
+    return (
+      <div className="auth-page">
+        <div className="auth-hero">
+          <div className="auth-mark">芽</div>
+          <div>
+            <h1>口袋园丁</h1>
+            <p>前端展示版</p>
+          </div>
+        </div>
+
+        <div className="auth-panel">
+          <div style={{ marginBottom: '14px' }}>
+            <div style={{ fontSize: '17px', fontWeight: 700 }}>本地展示</div>
+            <div style={{ marginTop: '6px', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+              使用内置演示数据预览应用界面。
+            </div>
+          </div>
+          <button className="btn btn-primary btn-block" type="button" onClick={enterDemoMode}>
+            进入本地展示
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -90,24 +116,9 @@ export default function Auth() {
           {submitting ? '处理中...' : isRegister ? '创建账号' : '进入花园'}
         </button>
 
-        <button
-          type="button"
-          className="btn btn-default btn-block"
-          onClick={enterDemoMode}
-          style={{ marginTop: '10px' }}
-        >
-          进入演示模式
-        </button>
-
         {!isRegister && (
           <div className="auth-demo">
-            演示账号 demo，密码 123456 · 也可以直接进入演示模式
-          </div>
-        )}
-
-        {demoMode && (
-          <div className="auth-demo" style={{ marginTop: '8px', color: 'var(--green)' }}>
-            当前处于演示模式
+            演示账号 demo，密码 123456
           </div>
         )}
       </form>

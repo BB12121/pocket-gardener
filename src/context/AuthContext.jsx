@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AUTH_TOKEN_KEY, fetchMe, login as loginApi, register as registerApi, setAuthToken } from '../services/api';
+import { SHOWCASE_MODE } from '../config/appVariant';
 import { AuthContext } from './authContextValue';
 
 const DEMO_MODE_KEY = 'pocket-gardener-demo-mode';
@@ -19,14 +20,18 @@ function notifyModeChange() {
 }
 
 export function AuthProvider({ children }) {
-  const initialDemoMode = localStorage.getItem(DEMO_MODE_KEY) === '1';
+  const initialDemoMode = SHOWCASE_MODE && localStorage.getItem(DEMO_MODE_KEY) === '1';
   const [demoMode, setDemoMode] = useState(initialDemoMode);
   const [token, setToken] = useState(() => localStorage.getItem(AUTH_TOKEN_KEY) || '');
   const [user, setUser] = useState(() => (initialDemoMode ? DEMO_USER : null));
   const [checking, setChecking] = useState(() => Boolean(localStorage.getItem(AUTH_TOKEN_KEY)) && !initialDemoMode);
+  const activeDemoMode = SHOWCASE_MODE && demoMode;
 
   useEffect(() => {
-    if (demoMode || !token) {
+    if (!SHOWCASE_MODE) {
+      localStorage.removeItem(DEMO_MODE_KEY);
+    }
+    if (activeDemoMode || !token) {
       setAuthToken('');
       return undefined;
     }
@@ -52,7 +57,7 @@ export function AuthProvider({ children }) {
     return () => {
       active = false;
     };
-  }, [demoMode, token]);
+  }, [activeDemoMode, token]);
 
   const applyAuth = useCallback((response) => {
     localStorage.removeItem(DEMO_MODE_KEY);
@@ -67,6 +72,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const enterDemoMode = useCallback(() => {
+    if (!SHOWCASE_MODE) return null;
     localStorage.setItem(DEMO_MODE_KEY, '1');
     localStorage.removeItem(AUTH_TOKEN_KEY);
     setDemoMode(true);
@@ -106,15 +112,16 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(() => ({
     checking,
-    demoMode,
-    isAuthenticated: Boolean(demoMode || (token && user)),
+    demoMode: activeDemoMode,
+    showcaseMode: SHOWCASE_MODE,
+    isAuthenticated: Boolean(activeDemoMode || (token && user)),
     token,
     user,
     login,
     register,
     enterDemoMode,
     logout,
-  }), [checking, demoMode, enterDemoMode, login, logout, register, token, user]);
+  }), [activeDemoMode, checking, enterDemoMode, login, logout, register, token, user]);
 
   return (
     <AuthContext.Provider value={value}>

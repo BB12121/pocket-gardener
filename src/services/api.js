@@ -3,8 +3,9 @@ import * as mockData from '../data/mockData';
 const DEFAULT_WEB_API_BASE = 'http://localhost:8080/api';
 const DEFAULT_ANDROID_API_BASE = 'http://10.0.2.2:8081/api';
 const isNativeApp = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
-const API_BASE = import.meta.env.VITE_API_BASE ?? (isNativeApp ? DEFAULT_ANDROID_API_BASE : DEFAULT_WEB_API_BASE);
+const BUILD_API_BASE = import.meta.env.VITE_API_BASE ?? (isNativeApp ? DEFAULT_ANDROID_API_BASE : DEFAULT_WEB_API_BASE);
 export const AUTH_TOKEN_KEY = 'pocket-gardener-token';
+export const API_BASE_STORAGE_KEY = 'pocket-gardener-api-base';
 let authToken = '';
 
 export function setAuthToken(token) {
@@ -31,9 +32,72 @@ function currentAuthToken() {
   return localStorage.getItem(AUTH_TOKEN_KEY) || '';
 }
 
+export function getDefaultApiBase() {
+  return BUILD_API_BASE;
+}
+
+export function normalizeApiBase(value) {
+  const rawValue = value?.trim() ?? '';
+  if (!rawValue) {
+    throw new Error('请输入服务器地址');
+  }
+
+  const withProtocol = /^https?:\/\//i.test(rawValue) ? rawValue : `http://${rawValue}`;
+  const withoutTrailingSlash = withProtocol.replace(/\/+$/, '');
+
+  let parsed;
+  try {
+    parsed = new URL(withoutTrailingSlash);
+  } catch {
+    throw new Error('服务器地址格式不正确');
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error('服务器地址只支持 http 或 https');
+  }
+
+  if (parsed.pathname === '' || parsed.pathname === '/') {
+    return `${parsed.origin}/api`;
+  }
+  return withoutTrailingSlash;
+}
+
+export function getApiBase() {
+  if (typeof localStorage === 'undefined') {
+    return BUILD_API_BASE;
+  }
+
+  const savedApiBase = localStorage.getItem(API_BASE_STORAGE_KEY);
+  if (!savedApiBase) {
+    return BUILD_API_BASE;
+  }
+
+  try {
+    return normalizeApiBase(savedApiBase);
+  } catch {
+    localStorage.removeItem(API_BASE_STORAGE_KEY);
+    return BUILD_API_BASE;
+  }
+}
+
+export function saveApiBase(value) {
+  const normalized = normalizeApiBase(value);
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(API_BASE_STORAGE_KEY, normalized);
+  }
+  return normalized;
+}
+
+export function resetApiBase() {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem(API_BASE_STORAGE_KEY);
+  }
+  return BUILD_API_BASE;
+}
+
 async function request(path, options = {}) {
   const token = currentAuthToken();
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetch(`${getApiBase()}${path}`, {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

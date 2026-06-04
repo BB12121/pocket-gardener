@@ -26,7 +26,7 @@ public class CareLogEntity {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "care_log_images", joinColumns = @JoinColumn(name = "log_id"))
-    @Column(name = "image", length = 2000000)
+    @Column(name = "image", columnDefinition = "LONGTEXT")
     private List<String> images = new ArrayList<>();
 
     protected CareLogEntity() {

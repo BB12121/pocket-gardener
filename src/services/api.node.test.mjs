@@ -7,8 +7,8 @@ async function loadApiModule() {
   const testableSource = source
     .replace("import * as mockData from '../data/mockData';", 'const mockData = {};')
     .replace(
-      "const API_BASE = import.meta.env.VITE_API_BASE ?? (isNativeApp ? DEFAULT_ANDROID_API_BASE : DEFAULT_WEB_API_BASE);",
-      "const API_BASE = 'http://localhost:8080/api';",
+      "const BUILD_API_BASE = import.meta.env.VITE_API_BASE ?? (isNativeApp ? DEFAULT_ANDROID_API_BASE : DEFAULT_WEB_API_BASE);",
+      "const BUILD_API_BASE = 'http://localhost:8080/api';",
     );
 
   return import(`data:text/javascript,${encodeURIComponent(testableSource)}#${Date.now()}`);
@@ -80,7 +80,7 @@ test('unauthorized responses clear the saved token and notify the app', async ()
 test('community interaction helpers call the post interaction endpoints', async () => {
   const calls = [];
   globalThis.localStorage = {
-    getItem: () => 'token',
+    getItem: key => (key === 'pocket-gardener-token' ? 'token' : null),
     setItem: () => {},
     removeItem: () => {},
   };
@@ -102,6 +102,47 @@ test('community interaction helpers call the post interaction endpoints', async 
   assert.equal(calls[1].url, 'http://localhost:8080/api/posts/c1/comments');
   assert.equal(calls[1].options.method, 'POST');
   assert.equal(calls[1].options.body, JSON.stringify({ content: '这条经验很有帮助' }));
+});
+
+test('requests use the server address saved at login', async () => {
+  const storage = new Map([
+    ['pocket-gardener-token', 'token'],
+    ['pocket-gardener-api-base', 'http://10.29.91.238:8080/api'],
+  ]);
+  let requestedUrl = '';
+  globalThis.localStorage = {
+    getItem: key => storage.get(key) ?? null,
+    setItem: (key, value) => storage.set(key, value),
+    removeItem: key => storage.delete(key),
+  };
+  globalThis.fetch = async (url) => {
+    requestedUrl = url;
+    return {
+      ok: true,
+      json: async () => ({ ok: true }),
+    };
+  };
+
+  const api = await loadApiModule();
+
+  await api.fetchGarden();
+
+  assert.equal(requestedUrl, 'http://10.29.91.238:8080/api/garden');
+});
+
+test('server address helper normalizes a host and port to the api root', async () => {
+  const storage = new Map();
+  globalThis.localStorage = {
+    getItem: key => storage.get(key) ?? null,
+    setItem: (key, value) => storage.set(key, value),
+    removeItem: key => storage.delete(key),
+  };
+
+  const api = await loadApiModule();
+  const saved = api.saveApiBase('10.29.91.238:8080');
+
+  assert.equal(saved, 'http://10.29.91.238:8080/api');
+  assert.equal(storage.get('pocket-gardener-api-base'), 'http://10.29.91.238:8080/api');
 });
 
 test('image attachment picker accepts only images up to the attachment limit', async () => {

@@ -35,7 +35,7 @@ public class CommunityPostEntity {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "community_post_images", joinColumns = @JoinColumn(name = "post_id"))
-    @Column(name = "image", length = 2000000)
+    @Column(name = "image", columnDefinition = "LONGTEXT")
     private List<String> images = new ArrayList<>();
 
     protected CommunityPostEntity() {

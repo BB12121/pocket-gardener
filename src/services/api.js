@@ -6,6 +6,7 @@ const isNativeApp = typeof window !== 'undefined' && window.Capacitor?.isNativeP
 const BUILD_API_BASE = import.meta.env.VITE_API_BASE ?? (isNativeApp ? DEFAULT_ANDROID_API_BASE : DEFAULT_WEB_API_BASE);
 export const AUTH_TOKEN_KEY = 'pocket-gardener-token';
 export const API_BASE_STORAGE_KEY = 'pocket-gardener-api-base';
+const REQUEST_TIMEOUT_MS = 12000;
 let authToken = '';
 
 export function setAuthToken(token) {
@@ -97,14 +98,30 @@ export function resetApiBase() {
 
 async function request(path, options = {}) {
   const token = currentAuthToken();
-  const response = await fetch(`${getApiBase()}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers ?? {}),
-    },
-    ...options,
-  });
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller ? globalThis.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS) : null;
+  let response;
+
+  try {
+    response = await fetch(`${getApiBase()}${path}`, {
+      ...options,
+      signal: controller?.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers ?? {}),
+      },
+    });
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('连接服务器超时，请检查手机和电脑是否在同一网络，或在登录页设置正确的服务器地址', { cause: err });
+    }
+    throw new Error('无法连接服务器，请检查后端是否启动、服务器地址是否正确，或电脑防火墙是否允许 8080 端口', { cause: err });
+  } finally {
+    if (timeoutId) {
+      globalThis.clearTimeout(timeoutId);
+    }
+  }
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
